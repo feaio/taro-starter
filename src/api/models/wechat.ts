@@ -9,9 +9,12 @@ import type { User } from "./user";
  */
 export interface WechatAuthResponse {
   access_token: string;
-  refresh_token: string;
-  expires_at: string;
-  user: User;
+  refresh_token?: string;
+  expires_at?: string;
+  user_validated?: boolean;
+  user_authed_at?: string;
+  isMember?: boolean;
+  user?: User;
 }
 
 /**

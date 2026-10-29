@@ -21,38 +21,6 @@ interface InfiniteScrollProps {
   threshold?: number;
 }
 
-// 为微信小程序的IntersectionObserver回调定义接口
-interface ObserveResult {
-  id: string;
-  dataset: Record<string, any>;
-  intersectionRatio: number;
-  intersectionRect: {
-    left: number;
-    right: number;
-    top: number;
-    bottom: number;
-    width: number;
-    height: number;
-  };
-  boundingClientRect: {
-    left: number;
-    right: number;
-    top: number;
-    bottom: number;
-    width: number;
-    height: number;
-  };
-  relativeRect: {
-    left: number;
-    right: number;
-    top: number;
-    bottom: number;
-    width: number;
-    height: number;
-  };
-  time: number;
-}
-
 /**
  * 无限滚动组件，基于微信小程序的IntersectionObserver实现
  */
@@ -85,8 +53,8 @@ const InfiniteScroll: React.FC<InfiniteScrollProps> = ({
 
     observer
       .relativeToViewport({ bottom: threshold })
-      .observe(`#${triggerRef.current}`, (res: ObserveResult) => {
-        if (res.intersectionRatio > 0) {
+      .observe(`#${triggerRef.current}`, (res) => {
+        if ((res.intersectionRatio ?? 0) > 0) {
           setIsVisible(true);
         } else {
           setIsVisible(false);

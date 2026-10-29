@@ -1,22 +1,21 @@
-import type { WechatAuthResponse } from "~/api/wechat";
-import dayjs from "dayjs";
+import type { WechatAuthResponse } from "~/api/models/wechat";
 import { cache } from "~/cache";
+import { useAuthStore } from "~/store";
 
-// Token相关工具函数
-function isTokenExpired(expiresAt: string | null): boolean {
-  if (!expiresAt) {
-    return true;
-  }
-  return dayjs(new Date()).isAfter(dayjs(expiresAt));
+/**
+ * saveAuthData：将登录接口返回的认证信息与会员状态同步写入 cache 与全局 Zustand store（单一职责 SRP）。
+ */
+export function saveAuthData(authData: WechatAuthResponse) {
+  const isMember = Boolean(
+    authData.isMember
+    ?? authData.user_validated
+    ?? cache.getSync("isMember"),
+  );
+
+  useAuthStore.getState().setAuthData({
+    access_token: authData.access_token,
+    isMember,
+    user_validated: authData.user_validated,
+    user_authed_at: authData.user_authed_at,
+  });
 }
-
-// 缓存相关的工具函数
-function saveAuthData(authData: WechatAuthResponse) {
-  cache.setSync("access_token", authData.access_token);
-  cache.setSync("refresh_token", authData.refresh_token);
-  cache.setSync("expires_at", authData.expires_at);
-  cache.setSync("user", authData.user);
-}
-
-// 导出工具函数
-export { isTokenExpired, saveAuthData };

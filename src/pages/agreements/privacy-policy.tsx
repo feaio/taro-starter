@@ -3,15 +3,12 @@ import PageWrapper from "~/components/PageWrapper";
 
 export default function PrivacyPolicy() {
   return (
-    <PageWrapper
-      navTitle="隐私保护政策"
-      className="h-full"
-    >
+    <PageWrapper navTitle="隐私保护政策">
       <View className="p-4 text-sm text-text leading-sm space-y-4">
-        <View className="text-center text-lg text-text font-bold">_boot-taro-react_小程序隐私保护政策</View>
+        <View className="text-center text-lg text-text font-bold">taro-starter小程序隐私保护政策</View>
 
         <View className="text-text font-medium">【特别提示】</View>
-        <View>本政策仅适用于_boot-taro-react_小程序开发者"XXX有限公司"（以下简称"开发者"或"我们"）提供的产品和服务。请您仔细阅读（尤其是加粗内容），在确认充分理解并同意后使用相关产品和服务。</View>
+        <View>本政策仅适用于taro-starter小程序开发者"XXX有限公司"（以下简称"开发者"或"我们"）提供的产品和服务。请您仔细阅读（尤其是加粗内容），在确认充分理解并同意后使用相关产品和服务。</View>
 
         <View>本政策是开发者为处理你的个人信息而制定。</View>
 

@@ -6,6 +6,7 @@ import { useLaunchOptions } from "taro-hooks";
 import { cache } from "~/cache";
 import { initSRSDK } from "~/sr.config";
 import { fetchAndCacheSystemInfoAsync, updateVersion } from "~/utils";
+import { ensureLoginWithQueue } from "~/utils/httpClient";
 import { queryClient } from "./lib/react-query";
 import "@kirklin/reset-css/taro/kirklin.css";
 import "uno.css";
@@ -22,11 +23,16 @@ function App({ children }: PropsWithChildren<any>) {
   const launchOptions = useLaunchOptions();
   useLaunch(() => {
     cache.set("launchOptions", launchOptions).then(() => console.debug("App launched.", launchOptions));
+    // 启动时缓存一次系统信息（非阻塞）
+    fetchAndCacheSystemInfoAsync(false).catch(() => {});
+    // 启动时触发全局登录（wx.login -> /auth/login），期间所有非白名单 API 将在队列中等待其完成
+    ensureLoginWithQueue().catch((err) => {
+      console.error("Global login failed:", err);
+    });
   });
   // 对应 onShow
   useDidShow(() => {
     nextTick(() => {
-      fetchAndCacheSystemInfoAsync().then();
       if (process.env.TARO_ENV !== "h5") {
         updateVersion();
       }

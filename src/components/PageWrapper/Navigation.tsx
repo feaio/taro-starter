@@ -1,42 +1,45 @@
-import type { MenuButtonInfo, NavBarProps, NavigationProps } from "./types";
+import type { NavBarProps, NavigationProps } from "./types";
+import type { NavBarMetrics } from "~/utils/safeArea";
 import { View } from "@tarojs/components";
-import Taro, { usePageScroll } from "@tarojs/taro";
-import { useEffect, useState } from "react";
+import { usePageScroll } from "@tarojs/taro";
+import { useMemo, useRef, useState } from "react";
 import NavigationMenu from "~/components/PageWrapper/NavigationMenu";
 import { ADAPTED_PAGES, RouteNames } from "~/constants/routes";
+import { getNavBarSafeHeight } from "~/utils/safeArea";
 
-// NavBar 组件
-function NavBar({
+/**
+ * NavBar：全局顶部导航栏渲染组件（单一职责 SRP）。
+ * 依赖：NavigationMenu、NavBarMetrics。不负责：业务状态获取。
+ */
+export function NavBar({
   title,
   navClassName,
   renderCustomHeader,
   menuButton,
   shouldShowNavigationMenu,
-}: NavBarProps) {
-  // 计算导航栏高度
-  const navHeight = menuButton.top + menuButton.height + (menuButton.top - menuButton.statusBarHeight);
-  const { statusBarHeight } = menuButton;
-  const horizontalPadding = menuButton.width + menuButton.marginRight * 2;
+}: NavBarProps & { menuButton: NavBarMetrics }) {
+  const { navHeight, statusBarHeight, horizontalPadding } = menuButton;
 
-  // 添加滚动状态跟踪
+  // 添加滚动状态跟踪，使用 ref 避免在 usePageScroll 回调中因闭包陈旧值重复触发 setState
   const [scrolled, setScrolled] = useState(false);
+  const scrolledRef = useRef(false);
 
   // 监听页面滚动
   usePageScroll(({ scrollTop }) => {
-    // 当滚动超过导航栏高度的 1/8 时，激活毛玻璃效果
-    if (scrollTop > navHeight / 8) {
-      !scrolled && setScrolled(true);
-    } else {
-      scrolled && setScrolled(false);
+    const shouldScroll = scrollTop > navHeight / 8;
+    if (shouldScroll !== scrolledRef.current) {
+      scrolledRef.current = shouldScroll;
+      setScrolled(shouldScroll);
     }
   });
 
   return (
     <>
       {/* 实际的导航栏 - 动态样式 */}
-      <View className={`navigation-bar fixed left-0 right-0 top-0 z-800 transition-all duration-300 ${
-        scrolled ? "backdrop-blur-md bg-white/60" : ""
-      }  ${navClassName || ""}`}
+      <View
+        className={`navigation-bar fixed left-0 right-0 top-0 z-800 transition-all duration-300 ${
+          scrolled ? "backdrop-blur-md bg-white/60" : ""
+        }  ${navClassName || ""}`}
       >
         <View
           style={{
@@ -44,7 +47,9 @@ function NavBar({
             paddingTop: `${statusBarHeight}px`,
           }}
         >
-          {shouldShowNavigationMenu && <NavigationMenu homeUrl={ADAPTED_PAGES[RouteNames.HOME]} menuButton={menuButton} />}
+          {shouldShowNavigationMenu && (
+            <NavigationMenu homeUrl={ADAPTED_PAGES[RouteNames.HOME]} menuButton={menuButton} />
+          )}
           <View
             className="navigation-bar__content h-full flex flex-col items-center justify-center"
             style={{
@@ -52,9 +57,10 @@ function NavBar({
               marginRight: `${horizontalPadding}px`,
             }}
           >
-            <View className={`navigation-bar__title font-chinese w-full text-ellipsis text-center text-base font-bold ${
-              scrolled ? "text-text" : "text-text"
-            }`}
+            <View
+              className={`navigation-bar__title font-chinese w-full text-ellipsis text-center text-base font-bold ${
+                scrolled ? "text-text" : "text-text"
+              }`}
             >
               {title}
             </View>
@@ -71,58 +77,24 @@ function NavBar({
   );
 }
 
-// 主 Navigation 组件
+/**
+ * Navigation：全局顶部导航栏容器组件，调用带内存缓存的 getNavBarSafeHeight 计算顶部安全高度并驱动 NavBar 渲染，避免首次挂载二次重渲染（单一职责 SRP）。
+ */
 export default function Navigation({
   navTitle,
   navClassName,
   renderCustomHeader,
   shouldShowNavigationMenu,
 }: NavigationProps) {
-  const [menuButton, setMenuButton] = useState<MenuButtonInfo | null>(null);
+  const metrics = useMemo(() => getNavBarSafeHeight(), []);
 
-  useEffect(() => {
-    // 获取菜单按钮（胶囊按钮）的位置信息
-    const fetchMenuButtonInfo = async () => {
-      try {
-        const windowInfo = Taro.getWindowInfo();
-        let menuButtonInfo;
-
-        if (process.env.TARO_ENV === "h5") {
-          // H5 模拟胶囊按钮信息的默认值
-          menuButtonInfo = {
-            top: 7,
-            height: 32,
-            width: 87,
-            right: windowInfo.windowWidth - 7,
-          };
-        } else {
-          menuButtonInfo = Taro.getMenuButtonBoundingClientRect();
-        }
-
-        setMenuButton({
-          top: menuButtonInfo.top,
-          height: menuButtonInfo.height,
-          statusBarHeight: windowInfo.statusBarHeight || 0,
-          width: menuButtonInfo.width,
-          marginRight: windowInfo.windowWidth - menuButtonInfo.right,
-        });
-      } catch (error) {
-        console.error("获取菜单按钮信息失败:", error);
-      }
-    };
-
-    fetchMenuButtonInfo();
-  }, []);
-
-  return menuButton
-    ? (
-        <NavBar
-          title={navTitle}
-          menuButton={menuButton}
-          shouldShowNavigationMenu={shouldShowNavigationMenu}
-          navClassName={navClassName}
-          renderCustomHeader={renderCustomHeader}
-        />
-      )
-    : null;
+  return (
+    <NavBar
+      title={navTitle}
+      menuButton={metrics}
+      shouldShowNavigationMenu={shouldShowNavigationMenu}
+      navClassName={navClassName}
+      renderCustomHeader={renderCustomHeader}
+    />
+  );
 }

@@ -13,6 +13,10 @@ export interface RouteParams {
   friendId?: string;
   messageId?: string;
   fromProfile?: boolean;
+  /** 登录/注册完成后重定向的目标路径 */
+  redirect?: string;
+  /** 登录/注册完成后是否返回上一页（"true" | "false" | boolean） */
+  shouldReturn?: boolean | string;
 }
 
 // 定义每个路由的参数配置
@@ -26,9 +30,13 @@ export type RouteConfig = {
 // 定义每个路由的具体参数类型
 export interface RouteParamConfig {
   [RouteNames.HOME]: Pick<RouteParams, "userId" | "from">;
+  [RouteNames.ONLINE_COURSES]: Pick<RouteParams, "from">;
+  [RouteNames.TRAINING_PLAN]: Pick<RouteParams, "from">;
   [RouteNames.PROFILE]: Pick<RouteParams, "from">;
+  [RouteNames.LOGIN]: Pick<RouteParams, "redirect" | "shouldReturn" | "from">;
   [RouteNames.PRIVACY_POLICY]: Pick<RouteParams, never>;
   [RouteNames.USER_AGREEMENT]: Pick<RouteParams, never>;
+  [RouteNames.COURSE_MESSAGES]: Pick<RouteParams, "from">;
 }
 
 // 路由配置对象

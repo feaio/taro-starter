@@ -42,8 +42,8 @@ export function useFormValidation<T>({
         setValidData(null);
         onError?.(error);
 
-        // 显示第一个错误信息
-        const firstError = error.errors[0];
+        // 显示第一个错误信息（Zod v4 使用 issues）
+        const firstError = error.issues[0];
         if (firstError) {
           Toast.open({
             message: firstError.message || "输入格式错误",

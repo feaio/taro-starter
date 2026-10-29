@@ -1,6 +1,6 @@
 {
   "miniprogramRoot": "./",
-  "projectname": "_boot-taro-react_",
+  "projectname": "taro-starter",
   "appid": "testAppId",
   "setting": {
     "es6": false,

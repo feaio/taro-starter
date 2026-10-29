@@ -50,21 +50,27 @@ export async function fetchAndCacheSystemInfoAsync(force: boolean = true): Promi
   }
 }
 
+/**
+ * getCurrentEnvironment：获取当前小程序运行环境（单一职责 SRP）。
+ * 注意：具体的 API 地址（TARO_API_BASE_URL）在编译时由 Taro 根据 `--mode` 自动从对应的 `.env.[mode]` 注入到 `process.env.TARO_API_BASE_URL` 常量中，
+ * 因此严禁在此处访问未在 `.env` 中定义的 `process.env.*` 属性，否则会导致小程序运行时报 `ReferenceError: process is not defined`。
+ */
 export function getCurrentEnvironment(): Environment {
-  // 使用微信小程序 API 拿到当前的小程序环境
-  const accountInfo = Taro.getAccountInfoSync();
-  const { envVersion } = accountInfo.miniProgram;
+  try {
+    const accountInfo = Taro.getAccountInfoSync();
+    const { envVersion } = accountInfo.miniProgram;
 
-  // 判断环境版本
-  switch (envVersion) {
-    case "develop":
-      return "development";
-    case "trial":
-      return "preview";
-    case "release":
-      return "production";
-    default:
-      console.warn("Unknown envVersion. Defaulting to development.");
-      return "development";
+    switch (envVersion) {
+      case "develop":
+        return "development";
+      case "trial":
+        return "preview";
+      case "release":
+        return "production";
+      default:
+        return "development";
+    }
+  } catch {
+    return "development";
   }
 }

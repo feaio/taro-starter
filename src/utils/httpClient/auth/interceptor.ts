@@ -1,48 +1,21 @@
 import type { RequestConfig } from "~/utils/httpClient/apiClient";
-import { login } from "@tarojs/taro";
-import { wechatLoginOrRegisterApi } from "~/api/wechat";
-import { cache } from "~/cache";
-import { isTokenExpired, saveAuthData } from "./index";
-import { refreshAccessToken } from "./token";
-
-// 用于存储刷新token的Promise
-let refreshTokenPromise: Promise<boolean> | null = null;
-let isRefreshing = false;
-
-// 用于存储重新登录的Promise
-let reLoginPromise: Promise<boolean> | null = null;
-let isReLogging = false;
+import { useAuthStore } from "~/store";
+import { ensureLoginWithQueue, isWhitelistedApi } from "./requestQueue";
 
 /**
- * 清除所有认证状态
+ * clearAuthState：清除所有认证状态并同步重置 store（单一职责 SRP）。
  */
-function clearAuthState() {
-  cache.removeSync("access_token");
-  cache.removeSync("refresh_token");
-  cache.removeSync("expires_at");
-  cache.removeSync("user");
-  refreshTokenPromise = null;
-  isRefreshing = false;
+export function clearAuthState() {
+  useAuthStore.getState().clearAuth();
 }
 
 /**
- * 尝试重新登录
- * @returns 是否登录成功
+ * attemptReLogin：触发重新登录（调用 wx.login -> /auth/login），与请求队列共享单飞锁（单一职责 SRP）。
  */
-async function attemptReLogin(): Promise<boolean> {
+export async function attemptReLogin(): Promise<boolean> {
   try {
-    const loginRes = await login();
-    if (!loginRes.code) {
-      return false;
-    }
-
-    const authResponse = await wechatLoginOrRegisterApi({ code: loginRes.code });
-    if (!authResponse.access_token) {
-      return false;
-    }
-
-    saveAuthData(authResponse);
-    return true;
+    const token = await ensureLoginWithQueue(true);
+    return Boolean(token);
   } catch (error) {
     console.error("Relogin failed:", error);
     return false;
@@ -50,81 +23,33 @@ async function attemptReLogin(): Promise<boolean> {
 }
 
 /**
- * 认证拦截器
- * 处理token的添加、刷新等逻辑
+ * handle401AndRetry：处理 401 未授权错误，清理旧 token 并通过队列单飞机制重新调用 wx.login 登录（单一职责 SRP）。
+ */
+export async function handle401AndRetry(): Promise<boolean> {
+  return attemptReLogin();
+}
+
+/**
+ * authInterceptor：全局 API 请求认证拦截器（单一职责 SRP）。
+ * - 自动注入公共请求头；
+ * - 白名单内或标记 `noAuth: true` 的请求直接放行；
+ * - 非白名单请求必须等待全局登录完成（未完成则进入重试等待队列）；
+ * - 完成后自动注入 `Authorization: Bearer <access_token>` 请求头。
  */
 export async function authInterceptor(config: RequestConfig): Promise<RequestConfig> {
-  // 如果请求配置中指定不需要认证,直接返回
-  if (config.noAuth) {
+  config.header = {
+    ...config.header,
+    "is-user": "true",
+  };
+
+  if (isWhitelistedApi(config.url, config.noAuth)) {
     return config;
   }
 
-  let accessToken = cache.getSync("access_token") || null;
-  const expiresAt = cache.getSync("expires_at") || null;
+  // 确保全局登录已完成（未完成或正在重登时自动进入等待队列）
+  const accessToken = await ensureLoginWithQueue(false);
 
-  // 如果没有token,尝试登录
-  if (!accessToken) {
-    if (!isReLogging) {
-      isReLogging = true;
-      reLoginPromise = attemptReLogin()
-        .finally(() => {
-          isReLogging = false;
-          reLoginPromise = null;
-        });
-    }
-
-    if (reLoginPromise) {
-      const success = await reLoginPromise;
-      if (success) {
-        accessToken = cache.getSync("access_token") || null;
-      } else {
-        throw new Error("Login required");
-      }
-    }
-  } else if (isTokenExpired(expiresAt)) { // 如果token过期,需要刷新
-    if (!isRefreshing) {
-      isRefreshing = true;
-      refreshTokenPromise = refreshAccessToken()
-        .finally(() => {
-          isRefreshing = false;
-          refreshTokenPromise = null;
-        });
-    }
-
-    // 等待token刷新完成
-    if (refreshTokenPromise) {
-      const success = await refreshTokenPromise;
-      if (success) {
-        accessToken = cache.getSync("access_token") || null;
-      } else {
-        refreshTokenPromise = null; // 确保失败后清除Promise
-        // 刷新失败,尝试重新登录
-        if (!isReLogging) {
-          isReLogging = true;
-          reLoginPromise = attemptReLogin()
-            .finally(() => {
-              isReLogging = false;
-              reLoginPromise = null;
-            });
-        }
-
-        if (reLoginPromise) {
-          const loginSuccess = await reLoginPromise;
-          if (loginSuccess) {
-            accessToken = cache.getSync("access_token") || null;
-          } else {
-            throw new Error("Login required");
-          }
-        }
-      }
-    }
-  }
-
-  // 添加认证头
   if (accessToken) {
-    if (!config.header) {
-      config.header = {};
-    }
     config.header.Authorization = `Bearer ${accessToken}`;
   }
 
@@ -132,16 +57,8 @@ export async function authInterceptor(config: RequestConfig): Promise<RequestCon
 }
 
 /**
- * 响应拦截器
- * 处理认证相关的错误响应
+ * authResponseInterceptor：全局响应拦截器（401 已由 request 层捕获并通过 handle401AndRetry 自动重登重试）（单一职责 SRP）。
  */
 export function authResponseInterceptor(response: any) {
-  // 处理 401 错误
-  if (response.statusCode === 401) {
-    clearAuthState();
-    const error = new Error("Unauthorized");
-    error.name = "AuthError";
-    throw error;
-  }
   return response;
 }

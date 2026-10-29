@@ -2,8 +2,8 @@ import type { AnyObject, CacheConfig, CacheKey, CacheMethods, CacheValue, Combin
 import { getStorage, getStorageSync, removeStorage, removeStorageSync, setStorage, setStorageSync } from "@tarojs/taro";
 
 /**
- * 缓存管理类
- * @author Kirk Lin
+ * 缓存管理类：负责内存（RAM）与本地持久化（Storage）缓存的统一读写管理（单一职责）。
+ * 依赖：@tarojs/taro Storage API。不负责：具体业务状态流转与 UI 订阅。
  *
  * @template R - RAM缓存类型
  * @template L - 本地存储缓存类型

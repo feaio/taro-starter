@@ -4,23 +4,16 @@ import { defineConfig } from "@tarojs/cli";
 import { createSwcRegister, getModuleDefaultExport } from "@tarojs/helper";
 import TsconfigPathsPlugin from "tsconfig-paths-webpack-plugin";
 import devConfig from "./dev";
-import { logEnv, setupEnv } from "./envConfig";
 import prodConfig from "./prod";
 
-// 设置环境变量
-setupEnv();
-
-// 打印环境变量和版本号
-logEnv();
-
 // https://taro-docs.jd.com/docs/next/config#defineconfig-辅助函数
-export default defineConfig(async (merge) => {
+export default defineConfig<"webpack5">(async (merge, { mode }) => {
   createSwcRegister({
     only: [filePath => filePath.includes("@unocss")],
   });
   const UnoCSS = getModuleDefaultExport(await import("@unocss/webpack"));
-  const baseConfig: UserConfigExport = {
-    projectName: "_boot-taro-react_",
+  const baseConfig: UserConfigExport<"webpack5"> = {
+    projectName: "taro-starter",
     date: "2025-01-21",
     designWidth: 750,
     deviceRatio: {
@@ -55,7 +48,6 @@ export default defineConfig(async (merge) => {
       enable: false, // Webpack 持久化缓存配置，建议开启。默认配置请参考：https://docs.taro.zone/docs/config-detail#cache
     },
     mini: {
-      baseLevel: 8,
       postcss: {
         pxtransform: {
           enable: true,
@@ -127,7 +119,7 @@ export default defineConfig(async (merge) => {
       },
     },
     rn: {
-      appName: "_boot-taro-react_",
+      appName: "taro-starter",
       postcss: {
         cssModules: {
           enable: false, // 默认为 false，如需使用 css modules 功能，则设为 true
@@ -135,7 +127,7 @@ export default defineConfig(async (merge) => {
       },
     },
   };
-  if (process.env.NODE_ENV === "development") {
+  if (mode === "development" || process.env.NODE_ENV === "development") {
     // 本地开发构建配置（不混淆压缩）
     return merge({}, baseConfig, devConfig);
   }

@@ -1,7 +1,7 @@
 import type Taro from "@tarojs/taro";
 import type { User } from "~/api/models/user";
-import type { SystemInfo } from "~/utils";
-import { createCache } from "~/utils";
+import type { SystemInfo } from "~/utils/env";
+import createCache from "~/utils/cache";
 
 /**
  * 定义缓存数据结构的类型：
@@ -16,8 +16,10 @@ interface LocalCache {
   sysInfo: SystemInfo; // 系统信息
   openid: string; // 用户的 OpenID
   access_token?: string;
-  refresh_token?: string;
-  expires_at?: string; // Token 过期时间
+  isMember?: boolean; // 是否属于会员
+  user_validated?: boolean; // 用户是否已认证/会员（与后端字段对齐）
+  user_authed_at?: string; // 用户授权时间
+  account?: string; // 会员注册账号
   user?: User;
   privacyAgreed: boolean; // 是否同意隐私政策
 }
@@ -34,8 +36,10 @@ const cache = createCache<RamCache, LocalCache>({
     sysInfo: {} as SystemInfo, // 系统信息
     openid: "",
     access_token: "",
-    refresh_token: "",
-    expires_at: "", // 默认 Token 过期时间为空
+    isMember: false, // 默认非会员
+    user_validated: false,
+    user_authed_at: "",
+    account: "", // 默认无会员账号
     user: undefined, // 默认没有用户信息
     privacyAgreed: false, // 默认未同意隐私政策
   },

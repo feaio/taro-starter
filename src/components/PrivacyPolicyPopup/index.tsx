@@ -39,7 +39,7 @@ export default function PrivacyPolicyPopup({ open, onClose }: PrivacyPolicyPopup
     >
       <Popup.Backdrop closeable={false} />
       <View className="mx-auto max-w-md rounded-t-2xl bg-white p-6 shadow-lg space-y-4">
-        <View className="text-center text-lg font-bold">_boot-taro-react_隐私保护指引</View>
+        <View className="text-center text-lg font-bold">taro-starter隐私保护指引</View>
         <View className="text-xs text-text leading-sm space-y-2">
           <View>
             点击"同意并继续"表示你已阅读并理解,
@@ -47,7 +47,7 @@ export default function PrivacyPolicyPopup({ open, onClose }: PrivacyPolicyPopup
               className="text-primary-6 underline"
               onClick={() => handleViewAgreement("user")}
             >
-              《_boot-taro-react_用户协议》
+              《taro-starter用户协议》
             </Text>
             <Text>和</Text>
             <Text

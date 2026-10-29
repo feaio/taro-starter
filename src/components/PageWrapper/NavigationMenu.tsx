@@ -2,7 +2,7 @@ import type { NavigationMenuProps } from "./types";
 import { View } from "@tarojs/components";
 import { getCurrentPages } from "@tarojs/taro";
 import { useCallback, useEffect, useState } from "react";
-import { ADAPTED_PAGES, RouteNames } from "~/constants/routes";
+import { ADAPTED_PAGES, RouteNames, TAB_BAR_ROUTES } from "~/constants/routes";
 import { navigateBack, reLaunch } from "~/utils/route";
 
 // 菜单按钮组件
@@ -26,11 +26,8 @@ function MenuButton({ menuButton, homeUrl }: NavigationMenuProps) {
       const currentPage = pages.at(-1);
       let currentUrl = currentPage?.route || currentPage?.__route__;
 
-      // 检查页面是导航条上的路由时，不显示返回和主页按钮
-      const noMenuPages = [
-        ADAPTED_PAGES[RouteNames.HOME],
-        ADAPTED_PAGES[RouteNames.PROFILE],
-      ];
+      // 检查页面是底部 Tab 导航条上的路由时，不显示返回和主页按钮
+      const noMenuPages = TAB_BAR_ROUTES.map(route => ADAPTED_PAGES[route]);
 
       if (currentUrl && currentUrl[0] === "/") {
         currentUrl = currentUrl.substring(1);

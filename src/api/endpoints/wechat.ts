@@ -10,7 +10,7 @@ export const wechatApi = createApi({
    */
   loginOrRegister: {
     method: "POST",
-    path: "/v1/api/wechat/login-or-register",
+    path: "/auth/login",
     params: {} as WechatAuthRequest,
     response: {} as WechatAuthResponse,
     options: { noAuth: true },

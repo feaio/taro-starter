@@ -30,13 +30,10 @@ export type RouteConfig = {
 // 定义每个路由的具体参数类型
 export interface RouteParamConfig {
   [RouteNames.HOME]: Pick<RouteParams, "userId" | "from">;
-  [RouteNames.ONLINE_COURSES]: Pick<RouteParams, "from">;
-  [RouteNames.TRAINING_PLAN]: Pick<RouteParams, "from">;
-  [RouteNames.PROFILE]: Pick<RouteParams, "from">;
+DISCOVERMESSAGES  [RouteNames.PROFILE]: Pick<RouteParams, "from">;
   [RouteNames.LOGIN]: Pick<RouteParams, "redirect" | "shouldReturn" | "from">;
   [RouteNames.PRIVACY_POLICY]: Pick<RouteParams, never>;
   [RouteNames.USER_AGREEMENT]: Pick<RouteParams, never>;
-  [RouteNames.COURSE_MESSAGES]: Pick<RouteParams, "from">;
 }
 
 // 路由配置对象

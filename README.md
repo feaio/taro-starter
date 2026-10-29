@@ -12,7 +12,7 @@
   - **客户端全局状态**：`Zustand` v5（`src/store/`）配合内存 (RAM) + 本地存储 (Storage) 强类型双层缓存 `cache`（`src/cache.ts`）
   - **服务端异步状态**：`@tanstack/react-query` v5（`src/lib/react-query.ts`）+ 模块化 `createApi` 工厂（`src/api/`）
 - **单飞（Single-Flight）请求队列与无感鉴权**：
-  - 无 `refresh_token` 极简设计：并发请求通过 `ensureLoginWithQueue()` 单飞队列挂起，全局仅触发唯一一次 `wx.login -> /auth/login`
+  - 并发请求通过 `ensureLoginWithQueue()` 单飞队列挂起，全局仅触发唯一一次 `wx.login -> /auth/login`
   - 支持 API 白名单与 `{ noAuth: true }` 放行，遇到 `401` 自动重登并无感重放原请求
 - **会员权限守卫与路由封装**：
   - 提供 `withMemberAuth` 高阶函数拦截非会员操作，自动跳转独立登录页 `/pages/login/index` 并支持登录成功后原路重定向（自动识别 TabBar 页与普通页）
@@ -140,7 +140,7 @@ pnpm lint:fix
 │   ├── system/run-workflow/      # 多 Agent 工作流编排 Skill
 │   └── taroify/SKILL.md          # Taroify 组件库检索与按需引入规范 Skill
 ├── src/
-│   ├── app.config.ts             # Taro 全局配置（主包 pages、subPackages 分包、preloadRule、custom 导航栏）
+│   ├── app.config.ts             # Taro 全局配置（pages 路由、tabBar 底部栏、custom 导航栏）
 │   ├── app.tsx                   # 应用入口（QueryClientProvider 挂载、启动触发 ensureLoginWithQueue）
 │   ├── app.scss                  # 全局样式与 CSS Variables 主题设计令牌
 │   ├── cache.ts                  # 内存 (RAM) + 本地存储 (Storage) 强类型双层缓存实例
@@ -155,7 +155,7 @@ pnpm lint:fix
 │   │   ├── PageWrapper/          # 全局页面布局容器（默认 h-full w-full，集成顶部 NavBar 与底部 BottomBar）
 │   │   ├── Layout/               # PageWrapper 的语义化别名导出
 │   │   ├── NavBar/               # 自定义顶部导航栏组件
-│   │   ├── BottomBar/            # 自定义贴底导航栏组件（支持 3 或 4 个 Tab 项、未读消息红点与安全区适配）
+│   │   ├── BottomBar/            # 自定义贴底导航栏组件（默认 4 个 Tab 项、安全区适配与未读红点预留）
 │   │   ├── PrivacyPolicyPopup/   # 首次启动隐私保护指引弹窗组件（基于 @taroify/core Popup）
 │   │   ├── S3Image/              # S3 / 普通图片自适应组件（自动拼接 TARO_S3_BASE_URL）
 │   │   ├── InfiniteScroll/       # 无限滚动列表容器组件
@@ -174,17 +174,14 @@ pnpm lint:fix
 │   ├── lib/
 │   │   └── react-query.ts        # TanStack QueryClient 全局实例配置
 │   ├── pages/
-│   │   ├── index/                # 首页（Tab 1，含隐私弹窗拦截、课程金刚区、打卡与专栏）
-│   │   ├── online-courses/       # 在线课程页（Tab 2）
-│   │   ├── training-plan/        # 培训计划页（Tab 3）
-│   │   ├── profile/              # 个人中心页（Tab 4，含岗位轮播、学习地图、密码修改与消息入口）
-│   │   ├── course/               # course 独立分包（root: "pages/course"）
-│   │   │   └── messages/         # 分包页面：我的消息（关键字搜索、6 宫格分类多选、单条/一键已读）
+│   │   ├── index/                # 首页（Tab 1，含隐私弹窗拦截、脚手架特性卡片与架构专栏）
+│   │   ├── discover/             # 发现页（Tab 2，含生态探索、分类标签与精选卡片占位）
+│   │   ├── messages/             # 消息中心页（Tab 3，含系统通知分类与一键已读演示）
+│   │   ├── profile/              # 个人中心页（Tab 4，含用户信息卡片、密码修改与系统设置）
 │   │   ├── login/                # 独立会员登录/注册页（支持 redirect 重定向与 shouldReturn 返回控制）
 │   │   └── agreements/           # 隐私保护政策与用户服务协议页
 │   ├── store/
-│   │   ├── useAuthStore.ts       # Zustand 全局认证与会员状态 Store（accessToken, isMember, account）
-│   │   └── useMessageStore.ts    # Zustand 全局消息状态 Store（消息持久化、已读变更与未读数统计）
+│   │   └── useAuthStore.ts       # Zustand 全局认证与会员状态 Store（accessToken, isMember, account）
 │   └── utils/
 │       ├── httpClient/
 │       │   ├── index.ts          # 统一请求出口（http.get/post/put/delete/patch, createFetch）与 401 自动重放
@@ -197,8 +194,7 @@ pnpm lint:fix
 │       ├── cache/                # 双层缓存核心实现（RAM + Storage）
 │       ├── s3.ts                 # S3 资源地址拼接工具（resolveS3Url / getS3Url）
 │       ├── safeArea.ts           # 顶部导航栏与底部安全区域高度计算（带内存单例缓存）
-│       ├── memberGuard.ts        # 非会员操作拦截器（withMemberAuth / checkMemberOrRedirect）
-│       └── route.ts              # 类型安全的路由跳转工具函数
+│       ├── memberGuard.ts        # 非会员操作拦截器（withMemberAuth / checkMemberOrRedirect）\n│       └── route.ts              # 类型安全的路由跳转工具函数
 ├── AGENTS.md / CLAUDE.md / GEMINI.md # AI 助手必读架构上下文文档
 └── package.json                  # 项目依赖与脚本
 ```
@@ -228,18 +224,58 @@ flowchart TD
 
 ### 1. 请求与鉴权（Single-Flight 队列 + 401 自动重放）
 
-- 所有非白名单请求在发送前通过 [`ensureLoginWithQueue()`](file:///Users/cy/Documents/Code/Fe/wizlong/taro-starter/src/utils/httpClient/auth/requestQueue.ts) 检查登录态。若尚未完成首次登录或正在重新登录，并发请求全部进入队列挂起，全局仅执行一次 `Taro.login() -> /auth/login`，成功后自动释放队列并注入 `Authorization: Bearer <access_token>`。
-- 当接口返回 `401` 时，[`httpClient`](file:///Users/cy/Documents/Code/Fe/wizlong/taro-starter/src/utils/httpClient/index.ts) 自动调用 `handle401AndRetry()` 刷新 Token 并重放原请求一次。
+- 所有非白名单请求在发送前通过 [`ensureLoginWithQueue()`](file:///Users/cy/Documents/Code/Dev/Fe/taro-starter/src/utils/httpClient/auth/requestQueue.ts) 检查登录态。若尚未完成首次登录或正在重新登录，并发请求全部进入队列挂起，全局仅执行一次 `Taro.login() -> /auth/login`，成功后自动释放队列并注入 `Authorization: Bearer <access_token>`。
+- 当接口返回 `401` 时，[`httpClient`](file:///Users/cy/Documents/Code/Dev/Fe/taro-starter/src/utils/httpClient/index.ts) 自动调用 `handle401AndRetry()` 刷新 Token 并重放原请求一次。
 
-### 2. 会员权限守卫（`withMemberAuth`）
+### 2. 后端登录接口契约规范 (Login API Contract)
 
-- 页面内需要会员权限的按钮或回调只需使用 [`withMemberAuth(fn)`](file:///Users/cy/Documents/Code/Fe/wizlong/taro-starter/src/utils/memberGuard.ts) 包裹。
-- 未开通会员时自动拦截并跳转至 [`/pages/login/index`](file:///Users/cy/Documents/Code/Fe/wizlong/taro-starter/src/pages/login/index.tsx)，携带当前路由作为 `redirect` 参数；登录成功后自动识别目标页是否为 TabBar 页面并完成原路跳转。
+> 💡 **重要说明**：本项目为**纯前端开源模版，不配套后端服务**。开发者接入自建后端或 Mock 服务时，请确保微信静默登录接口（默认 `POST /auth/login`，可通过 `src/api/wechat.ts` 调整）满足以下返回结构契约。
 
-### 3. Taroify 按需样式与 AI 文档检索
+#### 接口定义
+- **接口路径**: `POST /auth/login`
+- **请求方式**: `POST`
+- **请求参数**:
+  ```json
+  {
+    "code": "091Xp20w3bXxxx" // Taro.login() 返回的临时登录 code 凭证
+  }
+  ```
 
-- [`config/index.ts`](file:///Users/cy/Documents/Code/Fe/wizlong/taro-starter/config/index.ts) 已集成 `vite-plugin-style-import`，在业务代码中直接 `import { Button, Popup } from "@taroify/core"` 即可自动按需打包对应组件样式至 `vendors.wxss`。
-- 仓库内已持久化 [`docs/taroify/llms.txt`](file:///Users/cy/Documents/Code/Fe/wizlong/taro-starter/docs/taroify/llms.txt) 与 [`docs/taroify/llms-full.txt`](file:///Users/cy/Documents/Code/Fe/wizlong/taro-starter/docs/taroify/llms-full.txt)，AI 助手可离线精准查阅所有 Taroify 组件 Props 与示例。
+#### 真实响应数据结构 (Response Example)
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "access_token": "asdPkKNyI",
+    "refresh_token": "asdsadv-vo",
+    "expires_at": "2026-10-30T08:38:50.233352154Z",
+    "user_validated": true,
+    "user_authed_at": "2025-12-17T10:00:28.634029Z"
+  }
+}
+```
+
+#### 响应字段详细说明
+| 字段路径 | 数据类型 | 必填 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `code` | `number` | 是 | 业务响应状态码，`200` 代表请求处理成功 |
+| `message` | `string` | 是 | 响应状态描述，如 `"success"` |
+| `data.access_token` | `string` | 是 | 核心访问令牌（Bearer Token）。登录成功后前端将自动缓存并于后续所有非白名单请求中注入请求头 `Authorization: Bearer <access_token>` |
+| `data.refresh_token` | `string` | 否 | 刷新令牌，用于在 Access Token 过期时无感续期（可选） |
+| `data.expires_at` | `string` | 否 | Access Token 到期时间（ISO 8601 标准时间字符串，如 `"2026-10-30T08:38:50.233352154Z"`） |
+| `data.user_validated` | `boolean` | 否 | 用户实名/会员验证状态。`true` 时前端将自动赋予会员/已认证权限，同步写入 `useAuthStore` 与持久化存储中，用于驱动 `withMemberAuth` 守卫 |
+| `data.user_authed_at` | `string` | 否 | 用户完成实名或平台授权的时间戳（ISO 8601 标准格式） |
+
+### 3. 会员权限守卫（`withMemberAuth`）
+
+- 页面内需要会员权限的按钮或回调只需使用 [`withMemberAuth(fn)`](file:///Users/cy/Documents/Code/Dev/Fe/taro-starter/src/utils/memberGuard.ts) 包裹。
+- 未开通会员时自动拦截并跳转至 [`/pages/login/index`](file:///Users/cy/Documents/Code/Dev/Fe/taro-starter/src/pages/login/index.tsx)，携带当前路由作为 `redirect` 参数；登录成功后自动识别目标页是否为 TabBar 页面并完成原路跳转。
+
+### 4. Taroify 按需样式与 AI 文档检索
+
+- [`config/index.ts`](file:///Users/cy/Documents/Code/Dev/Fe/taro-starter/config/index.ts) 已集成 `vite-plugin-style-import`，在业务代码中直接 `import { Button, Popup } from "@taroify/core"` 即可自动按需打包对应组件样式至 `vendors.wxss`。
+- 仓库内已持久化 [`docs/taroify/llms.txt`](file:///Users/cy/Documents/Code/Dev/Fe/taro-starter/docs/taroify/llms.txt) 与 [`docs/taroify/llms-full.txt`](file:///Users/cy/Documents/Code/Dev/Fe/taro-starter/docs/taroify/llms-full.txt)，AI 助手可离线精准查阅所有 Taroify 组件 Props 与示例。
 
 ---
 

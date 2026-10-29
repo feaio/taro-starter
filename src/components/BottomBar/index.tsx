@@ -1,10 +1,9 @@
 import type { ReactNode } from "react";
 import { Text, View } from "@tarojs/components";
-import { getCurrentInstance, getCurrentPages, useDidShow } from "@tarojs/taro";
+import { useDidShow } from "@tarojs/taro";
 import { useMemo, useState } from "react";
 import { PAGES, RouteNames, TAB_BAR_ROUTES } from "~/constants/routes";
-import { useMessageStore } from "~/store";
-import { switchTab } from "~/utils/route";
+import { normalizeRoutePath, resolveCurrentPagePath, switchTab } from "~/utils/route";
 import { getBottomSafeAreaHeight } from "~/utils/safeArea";
 
 /**
@@ -14,10 +13,11 @@ export interface BottomBarItem {
   route: RouteNames;
   label: string;
   icon: string;
+  showDot?: boolean;
 }
 
 /**
- * DEFAULT_BOTTOM_BAR_ITEMS：默认 4 项底部导航配置（首页、在线课程、培训计划、我的，与 hmzx-app/我的 .html 实心图标风格对齐）。
+ * DEFAULT_BOTTOM_BAR_ITEMS：默认通用 4 项底部导航配置（首页、发现、消息、我的）。
  */
 export const DEFAULT_BOTTOM_BAR_ITEMS: BottomBarItem[] = [
   {
@@ -26,14 +26,14 @@ export const DEFAULT_BOTTOM_BAR_ITEMS: BottomBarItem[] = [
     icon: "i-tabler-home-filled",
   },
   {
-    route: RouteNames.ONLINE_COURSES,
-    label: "在线课程",
-    icon: "i-tabler-book-filled",
+    route: RouteNames.DISCOVER,
+    label: "发现",
+    icon: "i-tabler-compass-filled",
   },
   {
-    route: RouteNames.TRAINING_PLAN,
-    label: "培训计划",
-    icon: "i-tabler-calendar-filled",
+    route: RouteNames.MESSAGES,
+    label: "消息",
+    icon: "i-tabler-bell-filled",
   },
   {
     route: RouteNames.PROFILE,
@@ -44,39 +44,18 @@ export const DEFAULT_BOTTOM_BAR_ITEMS: BottomBarItem[] = [
 
 export interface BottomBarProps {
   /**
-   * 底部导航项列表，支持传入 3 个或 4 个导航项（默认使用 4 项：首页、在线课程、培训计划、我的）
+   * 底部导航项列表，支持传入 2 个或多个导航项（默认使用首页、发现、消息、我的）
    */
   items?: BottomBarItem[];
   /**
-   * 指定允许显示 BottomBar 的特定路由列表（默认仅在 TAB_BAR_ROUTES 即首页、在线课程、培训计划、我的出现）
+   * 指定允许显示 BottomBar 的特定路由列表（默认仅在 TAB_BAR_ROUTES 页面出现）
    */
   visibleRoutes?: RouteNames[];
 }
 
 /**
- * normalizeRoutePath：标准化路由路径（去除前导斜杠和查询参数），用于精确比对（单一职责 SRP）。
- */
-function normalizeRoutePath(path: string): string {
-  return path.replace(/^\//, "").split("?")[0];
-}
-
-/**
- * resolveCurrentPagePath：获取当前活跃页面的路由路径（兼容小程序页面栈与 H5 router）（单一职责 SRP）。
- */
-function resolveCurrentPagePath(): string {
-  const routerPath = getCurrentInstance().router?.path;
-  if (routerPath) {
-    return normalizeRoutePath(routerPath);
-  }
-  const pages = getCurrentPages();
-  const topPage = pages.at(-1);
-  const pageRoute = topPage?.route || (topPage as any)?.__route__ || "";
-  return normalizeRoutePath(pageRoute);
-}
-
-/**
- * BottomBar：全局贴底导航栏组件，还原 hmzx-app/我的 .html 1470-1508 行的字体大小（10px / text-xxs）、22px 图标、#217DC2 激活色、#9CA3AF 默认色及「我的」未读消息红点，并通过缓存版 getBottomSafeAreaHeight 消除切 Tab 二次重渲染（单一职责 SRP）。
- * 依赖：~/constants/routes、~/store/useMessageStore、~/utils/route、~/utils/safeArea。
+ * BottomBar：全局贴底导航栏组件，适配底部安全区与激活态切换（单一职责 SRP）。
+ * 依赖：~/constants/routes、~/utils/route、~/utils/safeArea。
  */
 export default function BottomBar({
   items = DEFAULT_BOTTOM_BAR_ITEMS,
@@ -85,16 +64,13 @@ export default function BottomBar({
   const [currentPage, setCurrentPage] = useState<string>(() => resolveCurrentPagePath());
   // 安全区指标在设备会话期间恒定不变，使用 useMemo 直接读取内存缓存，消除每次切 Tab 的 setState 二次渲染
   const safeMetrics = useMemo(() => getBottomSafeAreaHeight(56), []);
-  // 选择器仅订阅布尔值，避免消息列表引用变化但是否存在未读未变时触发重渲染
-  const hasUnreadMessages = useMessageStore(state => state.messages.some(m => !m.read));
 
   useDidShow(() => {
     const nextPath = resolveCurrentPagePath();
     setCurrentPage(prev => (prev === nextPath ? prev : nextPath));
   });
 
-  // 限制支持 3 或 4 个导航项
-  const resolvedItems = items.length >= 3 && items.length <= 4 ? items : DEFAULT_BOTTOM_BAR_ITEMS;
+  const resolvedItems = items && items.length >= 2 ? items : DEFAULT_BOTTOM_BAR_ITEMS;
 
   // 判断当前页面是否属于允许展示 BottomBar 的特定页面
   const isVisiblePage = visibleRoutes.some((route) => {
@@ -129,19 +105,18 @@ export default function BottomBar({
         }}
       >
         <View
-          className="box-border w-full flex items-center justify-around px-4 pb-1 pt-2"
+          className="box-border w-full flex items-center justify-around px-2 pb-1 pt-2"
           style={{ height: `${barContentHeight}px` }}
         >
           {resolvedItems.map((item) => {
             const active = isCurrentTab(item.route);
-            const showDot = item.route === RouteNames.PROFILE && hasUnreadMessages;
             return (
               <BottomBarButton
                 key={item.route}
                 active={active}
                 icon={item.icon}
                 label={item.label}
-                showUnreadDot={showDot}
+                showUnreadDot={Boolean(item.showDot)}
                 onClick={() => handleTabSwitch(item.route)}
               />
             );

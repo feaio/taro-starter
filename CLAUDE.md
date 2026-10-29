@@ -7,7 +7,7 @@
 ## 1. 技术栈概览
 
 - **核心框架**：Taro `4.3.1` + React `18.3.1` + TypeScript `6.x`（Vite `4.x` / `@tarojs/vite-runner` 编译）
-- **样式方案**：UnoCSS（`@unocss/vite` + `unocss-applet` 小程序预设，支持 `rem2rpx` 自动转换 + Tabler/MDI/LineMD/Iconamoon 图标集）+ Sass + `@taroify/core` `1.0.x` 组件库
+- **样式方案**：UnoCSS（`@unocss/vite` + `unocss-applet` 小程序预设，支持 `rem2rpx` 自动转换 + Tabler/MDI/LineMD/Iconamoon 图标集）+ Sass + `@taroify/core` `1.0.x` 组件库（通过 `vite-plugin-style-import` 按需引入样式）
 - **状态管理**：
   - **客户端全局状态**：`zustand`（`src/store/`）+ 本地/内存双层缓存 `cache`（`src/cache.ts`）
   - **服务端状态**：`@tanstack/react-query` v5（`src/lib/react-query.ts`）
@@ -20,8 +20,24 @@
 ```text
 ├── .env / .env.development / .env.test / .env.production  # 环境配置文件（通过 --env-prefix TARO_ 注入）
 ├── config/
-│   ├── index.ts              # Taro Vite 编译配置（使用 defineConfig<"vite"> 与 @tarojs/vite-runner）
-│   ├── dev.ts / prod.ts      # 开发/生产构建合并项
+│   ├── index.ts              # Taro Vite 编译配置（UnoCSS、vite-plugin-style-import、taroViteCompatPlugin）
+│   ├── dev.ts / prod.ts      # 开发/生产构建合并项（dev.ts 开启 mini.debugReact: true 兼容 React 18 开发态）
+├── docs/
+│   └── taroify/              # Taroify 官方 AI 文档持久化目录（pnpm docs:taroify 更新）
+│       ├── llms.txt          # 轻量文档索引（指南、组件、Hooks 列表与单页 .md 地址）
+│       └── llms-full.txt     # 全量离线文档合集（按 url: https://taroify.com/components/<name>/index.md 检索）
+├── script/
+│   └── ci/
+│       ├── upload.ts         # 微信小程序 CI 自动构建、上传与企微 Webhook 通知脚本（pnpm ci:upload）
+│       └── README.md         # CI 脚本使用说明
+├── skills/
+│   └── taroify/SKILL.md      # Taroify 组件库 AI Skill 说明
+├── docs/
+│   └── taroify/              # Taroify 官方 AI 文档持久化目录（pnpm docs:taroify 更新）
+│       ├── llms.txt          # 轻量文档索引（指南、组件、Hooks 列表与单页 .md 地址）
+│       └── llms-full.txt     # 全量离线文档合集（按 url: https://taroify.com/components/<name>/index.md 检索）
+├── skills/
+│   └── taroify/SKILL.md      # Taroify 组件库 AI Skill 说明
 ├── src/
 │   ├── app.config.ts         # Taro 全局配置（pages 主包注册、subPackages 分包注册、preloadRule、custom 导航栏、custom tabBar）
 │   ├── app.tsx               # 应用入口（QueryClientProvider、启动时触发全局登录队列）
@@ -38,6 +54,7 @@
 │   │   ├── Layout/           # PageWrapper 的别名导出
 │   │   ├── NavBar/           # 顶部导航栏独立导出入口
 │   │   ├── BottomBar/        # 底部贴底导航栏（支持 3 或 4 个 Tab 项，含底部安全区适配与未读红点）
+│   │   ├── PrivacyPolicyPopup/ # 隐私保护指引弹窗组件（基于 @taroify/core Popup）
 │   │   └── S3Image/          # S3/普通图片兼容组件（Props 与 Taro 原生 Image 完全一致，内部自动调用 resolveS3Url）
 │   ├── constants/
 │   │   ├── routes.ts         # RouteNames 枚举、PAGES 路径映射、TAB_BAR_ROUTES 底部导航路由集合
@@ -75,7 +92,7 @@
 ## 3. 核心机制与架构约定（修改代码必看）
 
 - **环境配置与启动命令**：
-  - `pnpm dev:weapp`（默认读取 `.env.development`）、`pnpm dev:weapp --mode test`（读取 `.env.test`）、`pnpm build:weapp`（读取 `.env.production`）。
+  - `pnpm dev:weapp`（默认读取 `.env.development`）、`pnpm dev:weapp --mode test`（读取 `.env.test`）、`pnpm build:weapp`（读取 `.env.production`）、`pnpm ci:upload`（自动构建并上传微信小程序）。
   - **严禁在 `src/` 业务代码中访问未在 `.env` 中定义的 `process.env.XXX` 变量**，否则编译后在小程序端会报 `ReferenceError: process is not defined`。
 - **全局登录队列与 401 自动重登（无 `refresh_token`）**：
   - 所有非白名单 API 请求通过 `src/utils/httpClient/auth/requestQueue.ts` 的 `ensureLoginWithQueue()` 单飞队列等待 `wx.login -> /auth/login` 完成，自动注入 `Authorization: Bearer <access_token>`。
@@ -88,3 +105,6 @@
   - 底部 `BottomBar` 支持 3 或 4 个导航项，仅在 `TAB_BAR_ROUTES` 指定的页面展示。
 - **防循环依赖**：
   - `src/cache.ts` 必须直接 `import createCache from "~/utils/cache"`，严禁从 `~/utils` 聚合入口导入。
+- **Taroify 组件库与本地 LLMs 文档检索**：
+  - 使用 `@taroify/core` 组件前，先查阅 `docs/taroify/llms.txt` 索引，再用 `grep -n "url: https://taroify.com/components/<name>/index.md" docs/taroify/llms-full.txt` 定位行号并按需读取对应组件章节（详见 `skills/taroify/SKILL.md`）。
+  - `config/index.ts` 已通过 `vite-plugin-style-import` 自动按需注入 `@taroify/core` 与 `@taroify/icons` 样式，业务代码中直接导入组件即可。

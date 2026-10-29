@@ -65,7 +65,7 @@ export function buildMessageContent(msg: LmsMessageItem, userName = DEFAULT_USER
     case "homework":
       return `尊敬的${n}您好，${msg.hwName}作业已发布，作业提交时间：${msg.submitStart}～${msg.submitEnd}，请关注作业信息，尽快提交作业。`;
     case "course":
-      return `尊敬的${n}您好，${msg.courseName}课程上线了，请尽快登录鸿蒙智行学习平台完成。`;
+      return `尊敬的${n}您好，${msg.courseName}课程上线了，请尽快登录在线学习平台完成。`;
     case "class":
       return `尊敬的${n}您好，您所在班级「${msg.className}」有新通知：${msg.classNotice}，请及时查看。`;
     case "exam":
@@ -85,7 +85,7 @@ export function getDefaultMessages(): LmsMessageItem[] {
       type: "homework",
       read: false,
       sentAt: "2026-05-18 09:15:00",
-      hwName: "智能座舱实操作业",
+      hwName: "跨端架构设计实操作业",
       submitStart: "2026-05-18 08:00:00",
       submitEnd: "2026-05-25 23:59:59",
     },
@@ -94,7 +94,7 @@ export function getDefaultMessages(): LmsMessageItem[] {
       type: "exam",
       read: false,
       sentAt: "2026-05-17 14:30:00",
-      examName: "鸿蒙智行-机电L1认证考试",
+      examName: "研发岗位-L1等级认证考试",
       examStart: "2026-05-20 09:00:00",
     },
     {
@@ -102,14 +102,14 @@ export function getDefaultMessages(): LmsMessageItem[] {
       type: "course",
       read: false,
       sentAt: "2026-05-16 10:00:00",
-      courseName: "高压系统诊断L1等级课程",
+      courseName: "高可用系统架构L1等级课程",
     },
     {
       id: "m4",
       type: "enroll",
       read: false,
       sentAt: "2026-05-18 08:45:00",
-      courseName: "交付顾问入店培训班",
+      courseName: "新员工入职基础培训班",
       classStart: "2026-05-22 09:00:00",
     },
     {
@@ -117,7 +117,7 @@ export function getDefaultMessages(): LmsMessageItem[] {
       type: "homework",
       read: false,
       sentAt: "2026-05-10 16:20:00",
-      hwName: "门店服务流程复盘作业",
+      hwName: "工程化规范与代码评审复盘作业",
       submitStart: "2026-05-10 08:00:00",
       submitEnd: "2026-05-15 18:00:00",
     },
@@ -126,14 +126,14 @@ export function getDefaultMessages(): LmsMessageItem[] {
       type: "course",
       read: false,
       sentAt: "2026-05-08 11:30:00",
-      courseName: "入店培训·机电岗位（含高压安全与诊断流程）",
+      courseName: "入职培训·研发岗位（含安全规范与研发流程）",
     },
     {
       id: "m7",
       type: "class",
       read: false,
       sentAt: "2026-05-15 15:40:00",
-      className: "2026年5月机电L1认证班",
+      className: "2026年5月研发L1认证班",
       classNotice: "明日上午 9:00 集合签到，请携带工牌与笔记本",
     },
     {
@@ -141,7 +141,7 @@ export function getDefaultMessages(): LmsMessageItem[] {
       type: "enroll",
       read: false,
       sentAt: "2026-05-12 09:00:00",
-      courseName: "智能驾驶场景实训班",
+      courseName: "前端架构进阶实训班",
       classStart: "2026-05-28 13:30:00",
     },
     {
@@ -149,7 +149,7 @@ export function getDefaultMessages(): LmsMessageItem[] {
       type: "exam",
       read: false,
       sentAt: "2026-05-11 18:00:00",
-      examName: "产品知识阶段性测验",
+      examName: "技术规范阶段性测验",
       examStart: "2026-05-19 14:00:00",
     },
     {
@@ -157,8 +157,8 @@ export function getDefaultMessages(): LmsMessageItem[] {
       type: "class",
       read: false,
       sentAt: "2026-05-09 10:20:00",
-      className: "交付顾问强化班（二期）",
-      classNotice: "课程地点变更为深圳南山用户中心 3 楼教室",
+      className: "架构师专项强化班（二期）",
+      classNotice: "课程地点变更为研发中心 3 楼培训教室",
     },
   ];
 }

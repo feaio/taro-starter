@@ -3,11 +3,12 @@ import type { Plugin } from "vite";
 import { resolve } from "node:path";
 import { defineConfig } from "@tarojs/cli";
 import { createSwcRegister, getModuleDefaultExport } from "@tarojs/helper";
+import { createStyleImportPlugin } from "vite-plugin-style-import";
 import devConfig from "./dev";
 import prodConfig from "./prod";
 
 /**
- * taroViteCompatPlugin：修复 @tarojs/vite-runner 在 watch 重编译、UnoCSS 虚拟模块解析与 Dart Sass 下兼容性告警（单一职责 SRP）。
+ * taroViteCompatPlugin：修复 @tarojs/vite-runner 在 watch 重编译、UnoCSS 虚拟模块解析与 Dart Sass 下的兼容性问题（单一职责 SRP）。
  * 1. 为 Vite 4 的 scss/sass 预处理器注入 silenceDeprecations: ["legacy-js-api"]，消除 Dart Sass legacy-js-api 废弃警告。
  * 2. 避免 taro:vite-multi-platform-plugin 对 "uno.css" 发起预解析并丢弃结果，从而消除 [unocss] "uno.css" is being imported multiple times 警告。
  * 3. 拦截 viteCompilerContext.collectNativeComponents，自动剔除 taro:vite-mini-emit 写入 page.config.usingComponents 的内部虚拟组件（comp / custom-wrapper），
@@ -16,6 +17,7 @@ import prodConfig from "./prod";
 function taroViteCompatPlugin(): Plugin {
   return {
     name: "taro:vite-compat-fix",
+    enforce: "pre",
     config() {
       return {
         css: {
@@ -103,6 +105,21 @@ export default defineConfig<"vite">(async (merge, { mode }) => {
       type: "vite",
       vitePlugins: [
         taroViteCompatPlugin(),
+        createStyleImportPlugin({
+          libs: [
+            {
+              libraryName: "@taroify/core",
+              esModule: true,
+              resolveStyle: (name: string) => `@taroify/core/${name}/style/index.js`,
+              ensureStyleFile: true,
+            },
+            {
+              libraryName: "@taroify/icons",
+              esModule: true,
+              resolveStyle: () => "@taroify/icons/style",
+            },
+          ],
+        }),
         UnoCSS(),
       ],
     },
@@ -132,6 +149,7 @@ export default defineConfig<"vite">(async (merge, { mode }) => {
     h5: {
       publicPath: "/",
       staticDirectory: "static",
+      esnextModules: ["@taroify"],
       router: {
         mode: "browser",
       },
@@ -165,6 +183,9 @@ export default defineConfig<"vite">(async (merge, { mode }) => {
       },
     },
   };
+
+  process.env.BROWSERSLIST_ENV = process.env.NODE_ENV;
+
   if (mode === "development" || process.env.NODE_ENV === "development") {
     // 本地开发构建配置（不混淆压缩）
     return merge({}, baseConfig, devConfig);

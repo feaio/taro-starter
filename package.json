@@ -100,6 +100,7 @@
     "lint:fix": "eslint . --fix",
     "test": "jest",
     "ci:upload": "ts-node script/ci/upload.ts",
+    "docs:taroify": "mkdir -p docs/taroify && curl -sSL https://taroify.com/llms.txt -o docs/taroify/llms.txt && curl -sSL https://taroify.com/llms-full.txt -o docs/taroify/llms-full.txt",
     "prepare": "npx husky",
     "preinstall": "npx only-allow pnpm"
   },
@@ -172,6 +173,7 @@
     "babel-plugin-import": "^1.13.8",
     "babel-preset-taro": "4.3.1",
     "commitizen": "^4.3.2",
+    "consola": "^3.4.2",
     "cross-env": "^10.1.0",
     "cz-conventional-changelog": "^3.3.0",
     "eslint": "^10.13.0",
@@ -193,6 +195,7 @@
     "unocss-preset-chinese": "^0.3.3",
     "unocss-preset-ease": "^0.0.4",
     "vite": "^4.5.14",
+    "vite-plugin-style-import": "^2.0.0",
     "vite-tsconfig-paths": "^5.1.4"
   },
   "pnpm": {

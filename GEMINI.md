@@ -27,3 +27,6 @@
   - 分包配置在 `src/app.config.ts` 的 `subPackages` 中（如 `pages/course` 分包下的 `messages/index` 我的消息页，消息状态存储在 `src/store/useMessageStore.ts`）。
 - **防循环依赖**：
   - `src/cache.ts` 必须直接从 `~/utils/cache` 导入 `createCache`，禁止从 `~/utils` 聚合入口导入。
+- **Taroify 组件库与本地 LLMs 文档（`docs/taroify/` & `skills/taroify/SKILL.md`）**：
+  - 本地已持久化 `docs/taroify/llms.txt`（索引）与 `docs/taroify/llms-full.txt`（全量离线文档），编写 Taroify 组件时先查 `llms.txt`，再按 `url: https://taroify.com/components/<name>/index.md` 在 `llms-full.txt` 中检索对应章节。
+  - `config/index.ts` 已自动按需注入 `@taroify/core` 与 `@taroify/icons` 组件样式，业务代码中无需手动 `import "@taroify/core/<comp>/style"`。

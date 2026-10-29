@@ -2,14 +2,14 @@
 // import sr from "sr-sdk-wxapp";// srConfig.ts
 export const srConfig = {
   /**
-   * 有数 - ka‘接入测试用’ 分配的 app_id，对应的业务接口人负责
+   * 腾讯有数分配的 token（请替换为实际项目配置）
    */
-  token: "bi72fccc7184ef4xxx",
+  token: "your_sr_sdk_token",
 
   /**
-   * 微信小程序appID，以wx开头
+   * 微信小程序 appID，以 wx 开头（请替换为实际项目配置）
    */
-  appid: "wx195745e8e342bxxx",
+  appid: "wx_your_mini_program_appid",
 
   /**
    * 如果使用了小程序插件，需要设置为 true

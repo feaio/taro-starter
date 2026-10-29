@@ -7,7 +7,7 @@
 ## 1. 技术栈概览
 
 - **核心框架**：Taro `4.3.1` + React `18.3.1` + TypeScript `6.x`（Vite `4.x` / `@tarojs/vite-runner` 编译）
-- **样式方案**：UnoCSS（`@unocss/vite` + `unocss-applet` 小程序预设，支持 `rem2rpx` 自动转换 + Tabler/MDI/LineMD/Iconamoon 图标集）+ Sass + `@taroify/core` `1.0.x` 组件库
+- **样式方案**：UnoCSS（`@unocss/vite` + `unocss-applet` 小程序预设，支持 `rem2rpx` 自动转换 + Tabler/MDI/LineMD/Iconamoon 图标集）+ Sass + `@taroify/core` `1.0.x` 组件库（通过 `vite-plugin-style-import` 按需引入样式）
 - **状态管理**：
   - **客户端全局状态**：`zustand`（`src/store/`）+ 本地/内存双层缓存 `cache`（`src/cache.ts`）
   - **服务端状态**：`@tanstack/react-query` v5（`src/lib/react-query.ts`）
@@ -20,8 +20,18 @@
 ```text
 ├── .env / .env.development / .env.test / .env.production  # 环境配置文件（通过 --env-prefix TARO_ 注入）
 ├── config/
-│   ├── index.ts              # Taro Vite 编译配置（使用 defineConfig<"vite"> 与 @tarojs/vite-runner）
-│   ├── dev.ts / prod.ts      # 开发/生产构建合并项
+│   ├── index.ts              # Taro Vite 编译配置（UnoCSS、vite-plugin-style-import、taroViteCompatPlugin）
+│   ├── dev.ts / prod.ts      # 开发/生产构建合并项（dev.ts 开启 mini.debugReact: true 兼容 React 18 开发态）
+├── docs/
+│   └── taroify/              # Taroify 官方 AI 文档持久化目录（pnpm docs:taroify 更新）
+│       ├── llms.txt          # 轻量文档索引（指南、组件、Hooks 列表与单页 .md 地址）
+│       └── llms-full.txt     # 全量离线文档合集（按 url: https://taroify.com/components/<name>/index.md 检索）
+├── script/
+│   └── ci/
+│       ├── upload.ts         # 微信小程序 CI 自动构建、上传与企微 Webhook 通知脚本（pnpm ci:upload）
+│       └── README.md         # CI 脚本使用说明
+├── skills/
+│   └── taroify/SKILL.md      # Taroify 组件库 AI Skill 说明
 ├── src/
 │   ├── app.config.ts         # Taro 全局配置（pages 主包注册、subPackages 分包注册、preloadRule、custom 导航栏、custom tabBar）
 │   ├── app.tsx               # 应用入口（QueryClientProvider、启动时触发全局登录队列）
@@ -38,6 +48,7 @@
 │   │   ├── Layout/           # PageWrapper 的别名导出
 │   │   ├── NavBar/           # 顶部导航栏独立导出入口
 │   │   ├── BottomBar/        # 底部贴底导航栏（支持 3 或 4 个 Tab 项，含底部安全区适配与未读红点）
+│   │   ├── PrivacyPolicyPopup/ # 隐私保护指引弹窗组件（基于 @taroify/core Popup）
 │   │   └── S3Image/          # S3/普通图片兼容组件（Props 与 Taro 原生 Image 完全一致，内部自动调用 resolveS3Url）
 │   ├── constants/
 │   │   ├── routes.ts         # RouteNames 枚举、PAGES 路径映射、TAB_BAR_ROUTES 底部导航路由集合
@@ -116,3 +127,11 @@
 ### 3.5 防循环依赖规范
 
 - `src/cache.ts` 是最底层基础设施，必须直接 `import createCache from "~/utils/cache"`，**严禁**从 `~/utils` 聚合入口导入，也不要在 `src/utils/index.ts` 中重导出依赖了 `useAuthStore` 或 `cache` 的业务上层模块，以防小程序启动阶段出现循环引用导致 `undefined`。
+
+### 3.6 Taroify 组件库与本地 LLMs 文档检索规范
+
+- **本地持久化文档（`docs/taroify/`）**：
+  - 编写或修改 `@taroify/core` / `@taroify/icons` 组件前，**优先阅读** `docs/taroify/llms.txt` 确认组件名称与路径，再使用 `grep -n "url: https://taroify.com/components/<name>/index.md" docs/taroify/llms-full.txt` 定位行号并按需读取该组件的 Props、Events 与子组件用法（详见 `skills/taroify/SKILL.md`）。
+  - 切勿一次性全量读取 `docs/taroify/llms-full.txt`（约 1.8 万行）。
+- **按需样式自动注入**：
+  - `config/index.ts` 已按官方 Vite 规范配置 `vite-plugin-style-import`（`createStyleImportPlugin`），自动解析 `@taroify/core/${name}/style/index.js`（开启 `ensureStyleFile: true`）与 `@taroify/icons/style`。业务代码中直接 `import { Button, Popup } from "@taroify/core"` 即可，无需手动引入样式文件。

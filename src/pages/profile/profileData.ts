@@ -58,7 +58,7 @@ export interface ProfileUserData {
 }
 
 /**
- * PROFILE_USER_DATA：个人中心演示档案数据（与 hmzx-app/我的 .html 对齐，单一职责 SRP）。
+ * PROFILE_USER_DATA：个人中心演示档案数据（单一职责 SRP）。
  */
 export const PROFILE_USER_DATA: ProfileUserData = {
   name: "张明远",
@@ -67,15 +67,15 @@ export const PROFILE_USER_DATA: ProfileUserData = {
     {
       type: "main",
       typeLabel: "主岗",
-      name: "机电技师",
+      name: "高级工程师",
       currentLevel: "L2",
       targetLevel: "L3",
       storeCode: "CNSCN340433",
-      storeName: "鸿蒙智行尚界用户中心 · 杭州西溪湿地公园",
+      storeName: "星云科技研发中心 · 杭州西溪园区",
       province: "浙江省",
       city: "杭州市",
       district: "西湖区",
-      dutyDesc: "1. 负责鸿蒙智行全系车型的机电维修与诊断；\n2. 配合技术主管完成疑难故障排查；\n3. 参与新车型技术培训与转训工作；\n4. 协助门店完成客户技术答疑与支持。",
+      dutyDesc: "1. 负责核心业务系统的架构设计与模块研发；\n2. 配合技术主管完成疑难问题排查与性能优化；\n3. 参与新技术预研与团队内训工作；\n4. 协助团队完成跨端工程化建设与技术支持。",
     },
     {
       type: "deputy",
@@ -84,23 +84,23 @@ export const PROFILE_USER_DATA: ProfileUserData = {
       currentLevel: "L1",
       targetLevel: "L2",
       storeCode: "CNSCN340434",
-      storeName: "鸿蒙智行·上海浦东体验中心",
+      storeName: "星云科技 · 上海浦东创新中心",
       province: "上海市",
       city: "上海市",
       district: "浦东新区",
-      dutyDesc: "1. 负责门店内部技术培训课程的开发与讲授；\n2. 跟进新员工技术能力评估与提升计划；\n3. 定期组织技术案例分享会；\n4. 对接总部培训资源，推动培训落地。",
+      dutyDesc: "1. 负责团队内部技术培训课程的开发与讲授；\n2. 跟进新员工技术能力评估与提升计划；\n3. 定期组织技术案例分享会；\n4. 对接培训资源，推动技术规范落地。",
     },
   ],
   learningMap: {
     main: {
-      positionName: "机电技师",
+      positionName: "高级工程师",
       levels: [
         {
           name: "准一级",
           type: "completed",
           enterTime: "2024-01-05",
           items: [
-            { desc: "入店培训【鸿蒙智行-机电岗位新人学习课程】", time: "2024-01-05 18:00:00" },
+            { desc: "入职培训【研发岗位新人基础学习课程】", time: "2024-01-05 18:00:00" },
           ],
         },
         {
@@ -108,17 +108,17 @@ export const PROFILE_USER_DATA: ProfileUserData = {
           type: "completed",
           updateTime: "2024-02-20",
           items: [
-            { desc: "等级课程【鸿蒙智行-机电岗位L1等级课程】", time: "2024-02-05 18:00:00" },
-            { desc: "等级培训【鸿蒙智行-机电岗位L1等级培训】（免训申请通过）", time: "2024-02-15 17:00:00" },
-            { desc: "等级认证【鸿蒙智行-机电岗位L1等级认证】", time: "2024-02-25 17:00:00" },
+            { desc: "等级课程【研发岗位L1等级课程】", time: "2024-02-05 18:00:00" },
+            { desc: "等级培训【研发岗位L1等级培训】（免训申请通过）", time: "2024-02-15 17:00:00" },
+            { desc: "等级认证【研发岗位L1等级认证】", time: "2024-02-25 17:00:00" },
           ],
         },
         {
           name: "L2",
           type: "in_progress",
           items: [
-            { desc: "等级课程【鸿蒙智行-机电岗位L2等级课程】", progress: "60%" },
-            { desc: "实操评估【高压系统维护与诊断】", progress: "35%" },
+            { desc: "等级课程【研发岗位L2进阶课程】", progress: "60%" },
+            { desc: "实操评估【高可用架构设计与性能调优】", progress: "35%" },
           ],
         },
         {
@@ -138,7 +138,7 @@ export const PROFILE_USER_DATA: ProfileUserData = {
           type: "completed",
           enterTime: "2024-06-01",
           items: [
-            { desc: "入店培训【技术培训师新人课程】", time: "2024-06-01 14:00:00" },
+            { desc: "入职培训【技术培训师新人课程】", time: "2024-06-01 14:00:00" },
           ],
         },
         {

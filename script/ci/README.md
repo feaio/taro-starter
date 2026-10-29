@@ -46,10 +46,10 @@ export WECHAT_PRIVATE_KEY_PATH=/path/to/private.key
 
 ```bash
 # 小程序 AppID（默认从 project.config.json 读取）
-WECHAT_APPID=wx817bd4697b7d479a
+WECHAT_APPID=wx_your_mini_program_appid
 
 # 企业微信 Webhook Key（代码中已内置默认值，也可通过环境变量覆盖）
-WECHAT_WEBHOOK_KEY=900558c5-3a93-4dba-8ddf-b0107e955072
+WECHAT_WEBHOOK_KEY=your-wechat-webhook-key
 
 # 密钥文件路径（默认: ./script/ci/private.{appid}.key）
 WECHAT_PRIVATE_KEY_PATH=./script/ci/private.key

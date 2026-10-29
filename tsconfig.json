@@ -24,7 +24,14 @@
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true
   },
-  "include": ["./src", "./types", "./config", "./unocss.config.ts"],
+  "ts-node": {
+    "compilerOptions": {
+      "module": "CommonJS",
+      "moduleResolution": "node",
+      "ignoreDeprecations": "6.0"
+    }
+  },
+  "include": ["./src", "./types", "./config", "./script", "./unocss.config.ts"],
   "exclude": ["dist", "node_modules"],
   "compileOnSave": false
 }

@@ -6,8 +6,8 @@
 
 ## 1. 技术栈概览
 
-- **核心框架**：Taro `4.2.0` + React `18.3` + TypeScript `6.x`（Webpack 5 编译）
-- **样式方案**：UnoCSS（`unocss-applet` 小程序预设，支持 `rem2rpx` 自动转换 + Tabler/MDI/LineMD/Iconamoon 图标集）+ Sass + `@taroify/core` 组件库
+- **核心框架**：Taro `4.3.1` + React `18.3.1` + TypeScript `6.x`（Vite `4.x` / `@tarojs/vite-runner` 编译）
+- **样式方案**：UnoCSS（`@unocss/vite` + `unocss-applet` 小程序预设，支持 `rem2rpx` 自动转换 + Tabler/MDI/LineMD/Iconamoon 图标集）+ Sass + `@taroify/core` `1.0.x` 组件库
 - **状态管理**：
   - **客户端全局状态**：`zustand`（`src/store/`）+ 本地/内存双层缓存 `cache`（`src/cache.ts`）
   - **服务端状态**：`@tanstack/react-query` v5（`src/lib/react-query.ts`）
@@ -20,10 +20,10 @@
 ```text
 ├── .env / .env.development / .env.test / .env.production  # 环境配置文件（通过 --env-prefix TARO_ 注入）
 ├── config/
-│   ├── index.ts              # Taro Webpack5 编译配置（使用 defineConfig<"webpack5">）
+│   ├── index.ts              # Taro Vite 编译配置（使用 defineConfig<"vite"> 与 @tarojs/vite-runner）
 │   ├── dev.ts / prod.ts      # 开发/生产构建合并项
 ├── src/
-│   ├── app.config.ts         # Taro 全局配置（pages 主包注册、subPackages 分包注册、custom 导航栏、custom tabBar）
+│   ├── app.config.ts         # Taro 全局配置（pages 主包注册、subPackages 分包注册、preloadRule、custom 导航栏、custom tabBar）
 │   ├── app.tsx               # 应用入口（QueryClientProvider、启动时触发全局登录队列）
 │   ├── cache.ts              # 内存 (RAM) + 本地存储 (Storage) 强类型缓存实例
 │   ├── api/
@@ -37,7 +37,8 @@
 │   │   ├── PageWrapper/      # 全局页面布局容器（Layout），默认自带 h-full w-full，内置顶部 NavBar 与底部 BottomBar
 │   │   ├── Layout/           # PageWrapper 的别名导出
 │   │   ├── NavBar/           # 顶部导航栏独立导出入口
-│   │   └── BottomBar/        # 底部贴底导航栏（支持 3 或 4 个 Tab 项，含底部安全区适配）
+│   │   ├── BottomBar/        # 底部贴底导航栏（支持 3 或 4 个 Tab 项，含底部安全区适配与未读红点）
+│   │   └── S3Image/          # S3/普通图片兼容组件（Props 与 Taro 原生 Image 完全一致，内部自动调用 resolveS3Url）
 │   ├── constants/
 │   │   ├── routes.ts         # RouteNames 枚举、PAGES 路径映射、TAB_BAR_ROUTES 底部导航路由集合
 │   │   └── routeTypes.ts     # 各路由的强类型参数定义 RouteParamConfig
@@ -62,7 +63,8 @@
 │       │       ├── requestQueue.ts # API 白名单管理 + 单飞登录等待队列（ensureLoginWithQueue）
 │       │       ├── interceptor.ts  # 请求头 Bearer Token 注入与 handle401AndRetry
 │       │       └── index.ts        # saveAuthData 同步写入 Store 与 Cache
-│       ├── safeArea.ts       # 顶部导航栏安全高度 getNavBarSafeHeight() 与底部安全区域高度 getBottomSafeAreaHeight()
+│       ├── s3.ts             # S3 地址拼接工具函数（resolveS3Url / getS3Url / getS3BaseUrl）
+│       ├── safeArea.ts       # 顶部导航栏安全高度 getNavBarSafeHeight() 与底部安全区域高度 getBottomSafeAreaHeight()（带内存级单例缓存）
 │       ├── memberGuard.ts    # 全局非会员动作拦截器（withMemberAuth / checkMemberOrRedirect）
 │       ├── route.ts          # 类型安全的路由跳转封装（navigateTo / redirectTo / switchTab / navigateBack / reLaunch）
 │       └── env.ts            # 系统信息缓存与小程序运行环境检测
@@ -79,7 +81,7 @@
   - `pnpm dev:weapp --mode test` → `test` 模式，读取 `.env.test`
   - `pnpm dev:weapp --mode production` 或 `pnpm build:weapp` → `production` 模式，读取 `.env.production`
 - **严禁在 `src/` 业务代码中访问未在 `.env` 中定义的 `process.env.XXX` 变量**：
-  - 小程序运行时没有 Node.js 的全局 `process` 对象，Babel 仅在编译期静态替换已声明的环境变量（`NODE_ENV`、`TARO_ENV`、`TARO_API_BASE_URL`、`TARO_S3_BASE_URL`）。若访问未定义的 `process.env.FOO`，编译后保留 `process.env.FOO` 会在小程序端触发 `ReferenceError: process is not defined`。
+  - 小程序运行时没有 Node.js 的全局 `process` 对象，编译器仅在构建期静态替换已声明的环境变量（`NODE_ENV`、`TARO_ENV`、`TARO_API_BASE_URL`、`TARO_S3_BASE_URL`）。若访问未定义的 `process.env.FOO`，编译后保留 `process.env.FOO` 会在小程序端触发 `ReferenceError: process is not defined`。
 
 ### 3.2 全局登录队列与 401 自动重登（无 `refresh_token`）
 
@@ -104,8 +106,8 @@
 
 - **页面包裹规范**：所有页面均使用 `<PageWrapper navTitle="...">` 包裹。`PageWrapper` 默认自带 `h-full w-full`，调用方无需在 `className` 中重复传 `h-full w-full`。
 - **安全区域公共函数（`src/utils/safeArea.ts`）**：
-  - 顶部导航安全高度：`getNavBarSafeHeight()`（返回 `navHeight`、`statusBarHeight`、`contentHeight`、`horizontalPadding` 等）。
-  - 底部安全区域高度：`getBottomSafeAreaHeight(barContentHeight)`（返回 `bottomSafeHeight`、`barContentHeight`、`totalBottomBarHeight`）。
+  - 顶部导航安全高度：`getNavBarSafeHeight()`（返回 `navHeight`、`statusBarHeight`、`contentHeight`、`horizontalPadding` 等，带内存缓存）。
+  - 底部安全区域高度：`getBottomSafeAreaHeight(barContentHeight)`（返回 `bottomSafeHeight`、`barContentHeight`、`totalBottomBarHeight`，带内存缓存）。
 - **底部导航栏 `BottomBar`（`src/components/BottomBar/index.tsx`）**：
   - 固定贴底（`fixed bottom-0 left-0 right-0`），内含底部安全区域 `paddingBottom` 与等高占位元素。
   - 支持传入 3 个或 4 个导航项，默认 4 项为：**首页、在线课程、培训计划、我的**。

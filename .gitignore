@@ -5,6 +5,9 @@ dist
 build
 dist-ssr
 *.local
+.env
+.env.*
+!.env.example
 deploy_versions/
 .temp/
 .rn_temp/

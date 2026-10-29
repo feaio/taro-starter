@@ -24,6 +24,22 @@
 pnpm install
 ```
 
+### 环境变量配置
+
+项目中的 `.env` 及 `.env.*` 文件不纳入 Git 管理，仓库仅保留 `.env.example` 作为配置模板。
+
+本地开发或构建前，请先基于 `.env.example` 复制创建 `.env` 文件，并根据实际需要几个环境就创建哪几个对应的 `.env.<mode>`（即 `.env.endfix`）文件（例如 `.env.development`、`.env.test`、`.env.production` 等）：
+
+```bash
+# 创建默认环境变量文件
+cp .env.example .env
+
+# 按需创建对应环境的配置文件（需要几个环境就创建哪几个）
+cp .env.example .env.development
+cp .env.example .env.test
+cp .env.example .env.production
+```
+
 ### 本地开发
 
 ```bash
@@ -61,6 +77,7 @@ pnpm build:h5
 │   └── app.tsx            # 应用入口
 ├── config                 # 编译与环境配置
 ├── types                  # 全局类型声明
+├── .env.example           # 环境变量配置示例
 ├── tsconfig.json          # TypeScript 配置
 └── package.json           # 项目依赖与脚本
 ```

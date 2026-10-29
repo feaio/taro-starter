@@ -2,7 +2,6 @@ import type { PropsWithChildren } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { View } from "@tarojs/components";
 import { nextTick, useDidHide, useDidShow, useLaunch } from "@tarojs/taro";
-import { useLaunchOptions } from "taro-hooks";
 import { cache } from "~/cache";
 import { initSRSDK } from "~/sr.config";
 import { fetchAndCacheSystemInfoAsync, updateVersion } from "~/utils";
@@ -20,8 +19,7 @@ const isSDKEnabled = false;
 initSRSDK(isSDKEnabled);
 
 function App({ children }: PropsWithChildren<any>) {
-  const launchOptions = useLaunchOptions();
-  useLaunch(() => {
+  useLaunch((launchOptions) => {
     cache.set("launchOptions", launchOptions).then(() => console.debug("App launched.", launchOptions));
     // 启动时缓存一次系统信息（非阻塞）
     fetchAndCacheSystemInfoAsync(false).catch(() => {});

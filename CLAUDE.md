@@ -1,13 +1,13 @@
-# AGENTS.md — 项目架构与 AI 开发指南
+# CLAUDE.md — 项目架构与 AI 开发指南
 
-> **重要说明**：本文件为 AI 助手（Claude / Gemini / Cursor 等）在每次新会话开始时的必读上下文文档。修改或新增功能前请直接参考本文档，无需重复全量扫描项目结构。
+> **重要说明**：本文件与 [AGENTS.md](./AGENTS.md) 保持同步，为 AI 助手在每次新会话开始时的必读上下文文档。修改或新增功能前请直接参考本文档，无需重复全量扫描项目结构。
 
 ---
 
 ## 1. 技术栈概览
 
-- **核心框架**：Taro `4.2.0` + React `18.3` + TypeScript `6.x`（Webpack 5 编译）
-- **样式方案**：UnoCSS（`unocss-applet` 小程序预设，支持 `rem2rpx` 自动转换 + Tabler/MDI/LineMD/Iconamoon 图标集）+ Sass + `@taroify/core` 组件库
+- **核心框架**：Taro `4.3.1` + React `18.3.1` + TypeScript `6.x`（Vite `4.x` / `@tarojs/vite-runner` 编译）
+- **样式方案**：UnoCSS（`@unocss/vite` + `unocss-applet` 小程序预设，支持 `rem2rpx` 自动转换 + Tabler/MDI/LineMD/Iconamoon 图标集）+ Sass + `@taroify/core` `1.0.x` 组件库
 - **状态管理**：
   - **客户端全局状态**：`zustand`（`src/store/`）+ 本地/内存双层缓存 `cache`（`src/cache.ts`）
   - **服务端状态**：`@tanstack/react-query` v5（`src/lib/react-query.ts`）
@@ -20,10 +20,10 @@
 ```text
 ├── .env / .env.development / .env.test / .env.production  # 环境配置文件（通过 --env-prefix TARO_ 注入）
 ├── config/
-│   ├── index.ts              # Taro Webpack5 编译配置（使用 defineConfig<"webpack5">）
+│   ├── index.ts              # Taro Vite 编译配置（使用 defineConfig<"vite"> 与 @tarojs/vite-runner）
 │   ├── dev.ts / prod.ts      # 开发/生产构建合并项
 ├── src/
-│   ├── app.config.ts         # Taro 全局配置（pages 主包注册、subPackages 分包注册、custom 导航栏、custom tabBar）
+│   ├── app.config.ts         # Taro 全局配置（pages 主包注册、subPackages 分包注册、preloadRule、custom 导航栏、custom tabBar）
 │   ├── app.tsx               # 应用入口（QueryClientProvider、启动时触发全局登录队列）
 │   ├── cache.ts              # 内存 (RAM) + 本地存储 (Storage) 强类型缓存实例
 │   ├── api/
@@ -37,7 +37,8 @@
 │   │   ├── PageWrapper/      # 全局页面布局容器（Layout），默认自带 h-full w-full，内置顶部 NavBar 与底部 BottomBar
 │   │   ├── Layout/           # PageWrapper 的别名导出
 │   │   ├── NavBar/           # 顶部导航栏独立导出入口
-│   │   └── BottomBar/        # 底部贴底导航栏（支持 3 或 4 个 Tab 项，含底部安全区适配）
+│   │   ├── BottomBar/        # 底部贴底导航栏（支持 3 或 4 个 Tab 项，含底部安全区适配与未读红点）
+│   │   └── S3Image/          # S3/普通图片兼容组件（Props 与 Taro 原生 Image 完全一致，内部自动调用 resolveS3Url）
 │   ├── constants/
 │   │   ├── routes.ts         # RouteNames 枚举、PAGES 路径映射、TAB_BAR_ROUTES 底部导航路由集合
 │   │   └── routeTypes.ts     # 各路由的强类型参数定义 RouteParamConfig
@@ -62,7 +63,8 @@
 │       │       ├── requestQueue.ts # API 白名单管理 + 单飞登录等待队列（ensureLoginWithQueue）
 │       │       ├── interceptor.ts  # 请求头 Bearer Token 注入与 handle401AndRetry
 │       │       └── index.ts        # saveAuthData 同步写入 Store 与 Cache
-│       ├── safeArea.ts       # 顶部导航栏安全高度 getNavBarSafeHeight() 与底部安全区域高度 getBottomSafeAreaHeight()
+│       ├── s3.ts             # S3 地址拼接工具函数（resolveS3Url / getS3Url / getS3BaseUrl）
+│       ├── safeArea.ts       # 顶部导航栏安全高度 getNavBarSafeHeight() 与底部安全区域高度 getBottomSafeAreaHeight()（带内存级单例缓存）
 │       ├── memberGuard.ts    # 全局非会员动作拦截器（withMemberAuth / checkMemberOrRedirect）
 │       ├── route.ts          # 类型安全的路由跳转封装（navigateTo / redirectTo / switchTab / navigateBack / reLaunch）
 │       └── env.ts            # 系统信息缓存与小程序运行环境检测
@@ -72,45 +74,17 @@
 
 ## 3. 核心机制与架构约定（修改代码必看）
 
-### 3.1 环境配置与启动命令
-
-- 启动脚本通过 `--mode` 自动读取对应 `.env.[mode]` 文件中以 `TARO_` 开头的变量：
-  - `pnpm dev:weapp` → 默认 `development` 模式，读取 `.env.development`
-  - `pnpm dev:weapp --mode test` → `test` 模式，读取 `.env.test`
-  - `pnpm dev:weapp --mode production` 或 `pnpm build:weapp` → `production` 模式，读取 `.env.production`
-- **严禁在 `src/` 业务代码中访问未在 `.env` 中定义的 `process.env.XXX` 变量**：
-  - 小程序运行时没有 Node.js 的全局 `process` 对象，Babel 仅在编译期静态替换已声明的环境变量（`NODE_ENV`、`TARO_ENV`、`TARO_API_BASE_URL`、`TARO_S3_BASE_URL`）。若访问未定义的 `process.env.FOO`，编译后保留 `process.env.FOO` 会在小程序端触发 `ReferenceError: process is not defined`。
-
-### 3.2 全局登录队列与 401 自动重登（无 `refresh_token`）
-
-- **无 `refresh_token` 设计**：项目仅使用 `wx.login()` 获取 `code` 调用 `POST /auth/login` 换取 `access_token`。
-- **单飞请求队列（`src/utils/httpClient/auth/requestQueue.ts`）**：
-  - 所有非白名单 API 请求在进入 `authInterceptor` 时会调用 `ensureLoginWithQueue()`。
-  - 若当前尚未登录或正在登录中，并发请求全部进入 `retryQueue` 挂起等待，全局仅发起**唯一一次** `Taro.login() -> /auth/login`，成功后唤醒所有挂起请求并注入 `Authorization: Bearer <access_token>`。
-  - **API 白名单**：默认包含 `/auth/login`，可通过 `addApiWhitelist()` 动态添加，或在 `createFetch` / `http.request` 中传入 `{ noAuth: true }` 直接放行。
-- **401 自动重登重放（`src/utils/httpClient/index.ts`）**：
-  - 当业务请求返回 `401` 时，`request` 自动调用 `handle401AndRetry()`（即 `ensureLoginWithQueue(true)`），清除旧 Token 并重新执行 `wx.login -> /auth/login`，随后使用新 Token 自动重放原请求一次（`retryCount < 1`）。
-
-### 3.3 会员状态与全局点击/动作拦截
-
-- **状态存储**：`useAuthStore`（`src/store/useAuthStore.ts`）维护 `accessToken`、`isMember`、`account`，并与 `src/cache.ts` 同步持久化。
-- **非会员拦截器（`src/utils/memberGuard.ts`）**：
-  - 使用 `withMemberAuth(fn, options)` 包裹需要会员权限的点击回调或业务函数（参考 `src/pages/profile/index.tsx`）。
-  - 当 `isMember === false` 时，自动拦截并跳转至 `/pages/login/index`，同时携带当前页面路径作为 `redirect` 参数。
-- **独立登录/注册页（`src/pages/login/index.tsx`）**：
-  - 支持接收路由参数 `redirect`（登录成功后重定向路径，自动区分 Tab 页 `switchTab` 与普通页 `redirectTo`）和 `shouldReturn`（未传 `redirect` 时是否 `navigateBack` 返回上一页，默认返回）。
-
-### 3.4 全局布局（`PageWrapper` / `Layout`）、`NavBar` 与 `BottomBar`
-
-- **页面包裹规范**：所有页面均使用 `<PageWrapper navTitle="...">` 包裹。`PageWrapper` 默认自带 `h-full w-full`，调用方无需在 `className` 中重复传 `h-full w-full`。
-- **安全区域公共函数（`src/utils/safeArea.ts`）**：
-  - 顶部导航安全高度：`getNavBarSafeHeight()`（返回 `navHeight`、`statusBarHeight`、`contentHeight`、`horizontalPadding` 等）。
-  - 底部安全区域高度：`getBottomSafeAreaHeight(barContentHeight)`（返回 `bottomSafeHeight`、`barContentHeight`、`totalBottomBarHeight`）。
-- **底部导航栏 `BottomBar`（`src/components/BottomBar/index.tsx`）**：
-  - 固定贴底（`fixed bottom-0 left-0 right-0`），内含底部安全区域 `paddingBottom` 与等高占位元素。
-  - 支持传入 3 个或 4 个导航项，默认 4 项为：**首页、在线课程、培训计划、我的**。
-  - 仅在 `TAB_BAR_ROUTES` 指定的特定页面显示，其他页面（如登录页、协议页、分包内页）自动隐藏。
-
-### 3.5 防循环依赖规范
-
-- `src/cache.ts` 是最底层基础设施，必须直接 `import createCache from "~/utils/cache"`，**严禁**从 `~/utils` 聚合入口导入，也不要在 `src/utils/index.ts` 中重导出依赖了 `useAuthStore` 或 `cache` 的业务上层模块，以防小程序启动阶段出现循环引用导致 `undefined`。
+- **环境配置与启动命令**：
+  - `pnpm dev:weapp`（默认读取 `.env.development`）、`pnpm dev:weapp --mode test`（读取 `.env.test`）、`pnpm build:weapp`（读取 `.env.production`）。
+  - **严禁在 `src/` 业务代码中访问未在 `.env` 中定义的 `process.env.XXX` 变量**，否则编译后在小程序端会报 `ReferenceError: process is not defined`。
+- **全局登录队列与 401 自动重登（无 `refresh_token`）**：
+  - 所有非白名单 API 请求通过 `src/utils/httpClient/auth/requestQueue.ts` 的 `ensureLoginWithQueue()` 单飞队列等待 `wx.login -> /auth/login` 完成，自动注入 `Authorization: Bearer <access_token>`。
+  - 遇到 `401` 时自动通过 `handle401AndRetry()` 重新登录并重放原请求一次。
+- **会员拦截与独立登录页**：
+  - 使用 `withMemberAuth(fn)`（`src/utils/memberGuard.ts`）包裹需要会员权限的操作，非会员自动跳转至 `/pages/login/index` 并支持登录成功后重定向或返回原页面。
+- **全局布局与安全区**：
+  - 页面统一使用 `<PageWrapper navTitle="...">`（或 `<Layout>`），默认自带 `h-full w-full`。
+  - 顶部导航安全高度使用 `getNavBarSafeHeight()`，底部安全高度使用 `getBottomSafeAreaHeight()`（`src/utils/safeArea.ts`）。
+  - 底部 `BottomBar` 支持 3 或 4 个导航项，仅在 `TAB_BAR_ROUTES` 指定的页面展示。
+- **防循环依赖**：
+  - `src/cache.ts` 必须直接 `import createCache from "~/utils/cache"`，严禁从 `~/utils` 聚合入口导入。

@@ -9,7 +9,7 @@ export default function UserAgreement() {
   };
 
   return (
-    <PageWrapper navTitle="用户协议">
+    <PageWrapper navTitle="用户协议" shouldCheckPrivacy={false}>
       <View className="p-4 text-sm text-text leading-sm space-y-4">
         <View className="text-center text-lg text-text font-bold">taro-starter用户服务协议</View>
 

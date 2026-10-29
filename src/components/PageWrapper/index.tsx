@@ -2,14 +2,19 @@ import type { ReactNode } from "react";
 import type { PageWrapperProps } from "./types";
 import { ConfigProvider, PullRefresh } from "@taroify/core";
 import { View } from "@tarojs/components";
+import { useMemo } from "react";
 import BottomBar from "~/components/BottomBar";
 import LoadingAnimation from "~/components/LoadingAnimation";
+import PrivacyPolicyPopup from "~/components/PrivacyPolicyPopup";
+import { ADAPTED_PAGES, RouteNames } from "~/constants/routes";
 import { useTheme } from "~/hooks/useTheme";
+import { usePrivacyStore } from "~/store";
+import { resolveCurrentPagePath } from "~/utils/route";
 import Navigation from "./Navigation";
 
 /**
- * PageWrapper（全局 Layout）：包裹所有页面的统一布局容器，默认自带 w-full h-full，集成顶部安全导航栏 NavBar、下拉刷新、Loading 遮罩及底部导航栏 BottomBar（单一职责 SRP）。
- * 依赖：Navigation、BottomBar、useTheme。不负责：具体页面业务逻辑。
+ * PageWrapper（全局 Layout）：包裹所有页面的统一布局容器，默认自带 w-full h-full，集成顶部安全导航栏 NavBar、下拉刷新、Loading 遮罩、底部导航栏 BottomBar 及全局隐私政策弹窗 PrivacyPolicyPopup（单一职责 SRP）。
+ * 依赖：Navigation、BottomBar、PrivacyPolicyPopup、usePrivacyStore、useTheme。不负责：具体页面业务逻辑。
  */
 export default function PageWrapper({
   navTitle,
@@ -27,8 +32,20 @@ export default function PageWrapper({
   enablePullToRefresh = false,
   backgroundClassName,
   loading = false,
+  shouldCheckPrivacy = true,
 }: PageWrapperProps) {
   const { getThemeVars } = useTheme();
+  const { hasAgreedPrivacy } = usePrivacyStore();
+
+  const isAgreementPage = useMemo(() => {
+    const currentPath = resolveCurrentPagePath();
+    return (
+      currentPath === ADAPTED_PAGES[RouteNames.PRIVACY_POLICY]
+      || currentPath === ADAPTED_PAGES[RouteNames.USER_AGREEMENT]
+    );
+  }, []);
+
+  const shouldShowPrivacyPopup = shouldCheckPrivacy && !hasAgreedPrivacy && !isAgreementPage;
 
   const showBottom = shouldShowBottomBar !== undefined ? shouldShowBottomBar : shouldShowBottomActions;
 
@@ -88,6 +105,8 @@ export default function PageWrapper({
         {showBottom && (
           <BottomBar items={bottomBarItems} />
         )}
+        {/* 全局隐私保护指引弹窗 */}
+        <PrivacyPolicyPopup open={shouldShowPrivacyPopup} />
       </View>
     </ConfigProvider>
   );

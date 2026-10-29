@@ -3,7 +3,7 @@ import PageWrapper from "~/components/PageWrapper";
 
 export default function PrivacyPolicy() {
   return (
-    <PageWrapper navTitle="隐私保护政策">
+    <PageWrapper navTitle="隐私保护政策" shouldCheckPrivacy={false}>
       <View className="p-4 text-sm text-text leading-sm space-y-4">
         <View className="text-center text-lg text-text font-bold">taro-starter小程序隐私保护政策</View>
 
@@ -55,7 +55,7 @@ export default function PrivacyPolicy() {
 
             <View className="pl-4 space-y-1">
               <View>1. 账号信息</View>
-              <View className="pl-4">路径：进入"我的"-"个人资料"-"更改资料"，您可以访问和修改您的头像、昵称等基本信息。</View>
+              <View className="pl-4">路径：进入"我的"-\"个人资料\"-\"更改资料\"，您可以访问和修改您的头像、昵称等基本信息。</View>
             </View>
 
             <View>（二）删除您的个人信息</View>
@@ -68,13 +68,13 @@ export default function PrivacyPolicy() {
 
             <View>（三）改变您授权同意的范围或撤回您的授权</View>
             <View>您可以通过以下路径改变或撤回您的授权：</View>
-            <View className="pl-4">路径：小程序右上角"···"-"设置"-点击对应的权限进行关闭。</View>
+            <View className="pl-4">路径：小程序右上角"···"-\"设置\"-点击对应的权限进行关闭。</View>
             <View className="font-bold">请您理解，当您撤回同意或授权后，我们将无法继续为您提供相应的服务，但您撤回同意或授权的决定，不会影响此前基于您的授权而开展的个人信息处理。</View>
 
             <View>（四）注销账号</View>
             <View>若您在小程序中注册了账号，您可以通过以下方式注销您的账号：</View>
             <View className="pl-4">
-              {/* <View>• 进入"我的"-"设置"-"注销账号"，按提示完成注销流程</View> */}
+              {/* <View>• 进入"我的"-\"设置\"-\"注销账号\"，按提示完成注销流程</View> */}
               <View>• 发送注销申请至开发者邮箱，我们将在15个工作日内处理您的申请</View>
             </View>
           </View>

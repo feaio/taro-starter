@@ -2,20 +2,28 @@ import { Button, Popup } from "@taroify/core";
 import { Text, View } from "@tarojs/components";
 import Taro from "@tarojs/taro";
 import { useCallback } from "react";
-import { cache } from "~/cache";
 import { RouteNames } from "~/constants/routes";
+import { usePrivacyStore } from "~/store";
 import { navigateTo } from "~/utils/route";
 
-interface PrivacyPolicyPopupProps {
+export interface PrivacyPolicyPopupProps {
+  /** 是否打开弹窗 */
   open: boolean;
-  onClose: () => void;
+  /** 关闭弹窗回调 */
+  onClose?: () => void;
 }
 
+/**
+ * PrivacyPolicyPopup：负责展示小程序隐私保护指引弹窗，处理用户同意、拒绝退出及跳转查看协议交互（单一职责 SRP）。
+ * 依赖：usePrivacyStore、~/constants/routes、~/utils/route。不负责：页面渲染与全局布局管理。
+ */
 export default function PrivacyPolicyPopup({ open, onClose }: PrivacyPolicyPopupProps) {
+  const { setAgreedPrivacy } = usePrivacyStore();
+
   const handleAgree = useCallback(() => {
-    cache.setSync("privacyAgreed", true);
-    onClose();
-  }, [onClose]);
+    setAgreedPrivacy(true);
+    onClose?.();
+  }, [setAgreedPrivacy, onClose]);
 
   const handleDisagree = useCallback(() => {
     Taro.exitMiniProgram();
@@ -25,9 +33,9 @@ export default function PrivacyPolicyPopup({ open, onClose }: PrivacyPolicyPopup
     navigateTo(type === "privacy" ? RouteNames.PRIVACY_POLICY : RouteNames.USER_AGREEMENT);
   }, []);
 
-  // 空函数，用于阻止默认的关闭行为
+  // 空函数，阻止用户点击蒙层或按键默认关闭
   const handleClose = useCallback(() => {
-    // 不执行任何操作
+    // 强制必须明确点击同意或拒绝
   }, []);
 
   return (

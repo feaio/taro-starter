@@ -17,6 +17,30 @@ function getCurrentPages(): number {
 }
 
 /**
+ * 规范化路由路径，移除开头斜杠与查询参数（单一职责 SRP）
+ * @param path 原始路径
+ * @returns 规范化后的路径
+ */
+export function normalizeRoutePath(path: string): string {
+  return path.replace(/^\//, "").split("?")[0];
+}
+
+/**
+ * resolveCurrentPagePath：获取当前活跃页面的路由路径（兼容小程序页面栈与 H5 router）（单一职责 SRP）。
+ * @returns 当前规范化后的路由路径（不含前导斜杠）
+ */
+export function resolveCurrentPagePath(): string {
+  const routerPath = Taro.getCurrentInstance().router?.path;
+  if (routerPath) {
+    return normalizeRoutePath(routerPath);
+  }
+  const pages = Taro.getCurrentPages();
+  const topPage = pages.at(-1);
+  const pageRoute = topPage?.route || (topPage as any)?.__route__ || "";
+  return normalizeRoutePath(pageRoute);
+}
+
+/**
  * 构建带参数的路由URL
  * @param route 路由名称
  * @param params 路由参数

@@ -1,72 +1,50 @@
 import { Avatar, Tag, Toast } from "@taroify/core";
-import { Image, Text, View } from "@tarojs/components";
-import Taro, { useLoad } from "@tarojs/taro";
+import { Text, View } from "@tarojs/components";
+import Taro from "@tarojs/taro";
 import { useState } from "react";
-import { cache } from "~/cache";
 import PageWrapper from "~/components/PageWrapper";
-import PrivacyPolicyPopup from "~/components/PrivacyPolicyPopup";
 import { RouteNames } from "~/constants/routes";
 import { useAuthStore } from "~/store";
 import { withMemberAuth } from "~/utils/memberGuard";
-import { switchTab } from "~/utils/route";
+import { navigateTo, switchTab } from "~/utils/route";
 import "./index.scss";
 
 const QUICK_ENTRIES = [
-  { label: "热门课程", icon: "i-tabler-flame", bg: "bg-orange-50", color: "text-orange-500", route: RouteNames.ONLINE_COURSES },
-  { label: "学习计划", icon: "i-tabler-calendar-check", bg: "bg-blue-50", color: "text-blue-500", route: RouteNames.TRAINING_PLAN },
-  { label: "技能认证", icon: "i-tabler-certificate", bg: "bg-emerald-50", color: "text-emerald-500", route: RouteNames.TRAINING_PLAN },
-  { label: "名师答疑", icon: "i-tabler-messages", bg: "bg-purple-50", color: "text-purple-500", route: RouteNames.PROFILE },
+  { label: "权限守卫", icon: "i-tabler-shield-check", bg: "bg-blue-50", color: "text-blue-500", type: "auth" },
+  { label: "生态发现", icon: "i-tabler-compass", bg: "bg-purple-50", color: "text-purple-500", type: "discover" },
+  { label: "消息中心", icon: "i-tabler-bell", bg: "bg-emerald-50", color: "text-emerald-500", type: "messages" },
+  { label: "个人中心", icon: "i-tabler-user", bg: "bg-orange-50", color: "text-orange-500", type: "profile" },
 ];
 
-const FEATURED_COURSES = [
+const STARTER_FEATURES = [
   {
     id: 1,
-    title: "Taro 4 跨端企业级实战与架构设计",
-    instructor: "林导师 · 资深前端架构师",
-    students: 1280,
-    lessons: 24,
-    tag: "精选进阶",
+    title: "Single-Flight 并发请求队列",
+    desc: "解决并发请求下 Token 自动刷新与无感重登的竞态问题",
+    tag: "网络层",
     tagColor: "primary" as const,
-    progress: 65,
   },
   {
     id: 2,
-    title: "React 18 并发渲染与 Zustand 状态管理最佳实践",
-    instructor: "陈导师 · 核心技术专家",
-    students: 960,
-    lessons: 18,
-    tag: "高分必学",
+    title: "Zustand 全局状态与 Storage 持久化",
+    desc: "轻量响应式状态，解耦业务模块，兼具高性能与良好可维护性",
+    tag: "状态层",
     tagColor: "success" as const,
-    progress: 30,
   },
   {
     id: 3,
-    title: "TypeScript 6 类型体操与全栈工程化体系搭建",
-    instructor: "王导师 · 开源项目维护者",
-    students: 2150,
-    lessons: 32,
-    tag: "限时热门",
+    title: "自适应自定义导航栏与底部安全区",
+    desc: "一套公式兼容 iOS、Android、小程序胶囊与 H5 异形屏",
+    tag: "布局组件",
     tagColor: "warning" as const,
-    progress: 0,
   },
   {
     id: 4,
-    title: "UnoCSS 原子化 CSS 与多端视觉还原技巧",
-    instructor: "赵导师 · UI 工程专家",
-    students: 740,
-    lessons: 12,
-    tag: "实战速成",
+    title: "细粒度权限拦截器 (MemberGuard)",
+    desc: "通过高阶函数无缝包装事件处理，拦截未授权操作",
+    tag: "守卫",
     tagColor: "primary" as const,
-    progress: 100,
   },
-];
-
-const WEEKLY_TASKS = [
-  { id: "t1", day: "周一", title: "完成小程序自定义导航栏与安全区适配", time: "45 分钟", done: true },
-  { id: "t2", day: "周二", title: "掌握单飞请求队列与 401 自动无感重登", time: "60 分钟", done: true },
-  { id: "t3", day: "周三", title: "练习高阶函数拦截器与会员权限路由守卫", time: "50 分钟", done: false },
-  { id: "t4", day: "周四", title: "深入 React Query 服务端缓存与乐观更新", time: "90 分钟", done: false },
-  { id: "t5", day: "周五", title: "多端打包构建优化与分包加载策略实操", time: "60 分钟", done: false },
 ];
 
 const ARTICLES = [
@@ -95,47 +73,44 @@ const ARTICLES = [
     id: "a4",
     title: "从零构建可扩展的多端组件库：主题变量与原子化样式的结合",
     summary: "如何利用 CSS Variables 配合 UnoCSS 实现丝滑的明暗主题切换与品牌色定制。",
-    reads: "1.9k 阅读",
-    date: "3天前",
+    reads: "3天前",
   },
 ];
 
 /**
- * Index：首页视图，包含学习概览、快捷金刚区、推荐课程、本周打卡计划及技术专栏列表，支持完整纵向滚动（单一职责 SRP）。
+ * Index：首页视图，展示 Taro Starter 开源跨端模版核心特性、功能组件演示及架构指南，支持完整纵向滚动（单一职责 SRP）。
  */
 export default function Index() {
   const [isToggled, setIsToggled] = useState(false);
-  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const { isMember, account } = useAuthStore();
-
-  useLoad(() => {
-    const hasAgreed = cache.getSync("privacyAgreed");
-    if (!hasAgreed) {
-      setShowPrivacyPolicy(true);
-    }
-  });
-
-  if (showPrivacyPolicy) {
-    return (
-      <PageWrapper
-        navTitle="首页"
-        shouldShowBottomActions={false}
-      >
-        <PrivacyPolicyPopup
-          open={showPrivacyPolicy}
-          onClose={() => setShowPrivacyPolicy(false)}
-        />
-      </PageWrapper>
-    );
-  }
 
   const toggleSwitch = () => {
     setIsToggled(prev => !prev);
   };
 
-  const handleVipCourseClick = withMemberAuth((courseTitle: string) => {
-    Toast.open(`开始学习：${courseTitle}`);
+  // 受会员权限保护的功能点击演示
+  const handleVipFeatureClick = withMemberAuth((featureTitle: string) => {
+    Toast.open(`已激活专属功能：${featureTitle}`);
   });
+
+  const handleQuickEntryClick = (type: string) => {
+    switch (type) {
+      case "auth":
+        navigateTo(RouteNames.LOGIN);
+        break;
+      case "discover":
+        switchTab(RouteNames.DISCOVER);
+        break;
+      case "messages":
+        switchTab(RouteNames.MESSAGES);
+        break;
+      case "profile":
+        switchTab(RouteNames.PROFILE);
+        break;
+      default:
+        break;
+    }
+  };
 
   return (
     <PageWrapper
@@ -157,11 +132,11 @@ export default function Index() {
                   {account || "开发者"}
                 </Text>
                 <Tag color={isMember ? "success" : "primary"} shape="rounded">
-                  {isMember ? "尊享会员" : "体验版"}
+                  {isMember ? "会员用户" : "体验用户"}
                 </Tag>
               </View>
               <Text className="mt-0.5 block text-xs text-gray-500">
-                今日已坚持学习 45 分钟，继续保持！
+                欢迎使用 Taro Starter 开源跨端模版
               </Text>
             </View>
           </View>
@@ -169,21 +144,21 @@ export default function Index() {
         </View>
 
         {/* 2. 主视觉横幅 Banner */}
-        <View
-          className="relative overflow-hidden rounded-3xl bg-primary-6 p-5 text-white shadow-md"
-          onClick={() => switchTab(RouteNames.ONLINE_COURSES)}
-        >
+        <View className="relative overflow-hidden rounded-3xl bg-primary-6 p-5 text-white shadow-md">
           <View className="relative z-10 space-y-2">
             <View className="inline-block rounded-full bg-white/20 px-3 py-0.5 text-xs font-medium">
-              2026 秋季特训营
+              Taro 4 + React 18 Starter
             </View>
-            <Text className="block text-xl font-bold">前端多端架构师进阶之路</Text>
+            <Text className="block text-xl font-bold">企业级跨端开发脚手架</Text>
             <Text className="block text-xs text-white/85">
-              涵盖 Taro 4 · React 18 · TypeScript · 高并发架构实战
+              开箱即用 · UnoCSS 原子化 · Zustand 状态管理 · 路由安全守卫
             </Text>
             <View className="pt-2">
-              <View className="inline-flex items-center rounded-full bg-white px-4 py-1.5 text-xs text-primary-6 font-bold shadow-sm">
-                立即探索课程
+              <View
+                className="inline-flex items-center rounded-full bg-white px-4 py-1.5 text-xs text-primary-6 font-bold shadow-sm active:opacity-90"
+                onClick={() => switchTab(RouteNames.DISCOVER)}
+              >
+                探索发现生态
                 <View className="i-tabler-arrow-right ml-1 text-sm" />
               </View>
             </View>
@@ -195,8 +170,8 @@ export default function Index() {
           {QUICK_ENTRIES.map(entry => (
             <View
               key={entry.label}
-              className="flex flex-col items-center justify-center space-y-1.5"
-              onClick={() => switchTab(entry.route)}
+              className="flex flex-col items-center justify-center space-y-1.5 active:opacity-75"
+              onClick={() => handleQuickEntryClick(entry.type)}
             >
               <View className={`h-12 w-12 flex items-center justify-center rounded-2xl ${entry.bg}`}>
                 <View className={`${entry.icon} text-2xl ${entry.color}`} />
@@ -206,26 +181,18 @@ export default function Index() {
           ))}
         </View>
 
-        {/* 4. 学习数据与交互卡片区 */}
+        {/* 4. 模版技术指标与交互卡片区 */}
         <View className="flex space-x-4">
-          <View
-            className="flex-1 rounded-2xl bg-indigo-600 p-4 text-white shadow-sm"
-            onClick={() => switchTab(RouteNames.TRAINING_PLAN)}
-          >
+          <View className="flex-1 rounded-2xl bg-indigo-600 p-4 text-white shadow-sm">
             <View className="mb-1 flex items-center justify-between">
-              <Text className="text-sm font-medium opacity-90">累计学习时长</Text>
+              <Text className="text-sm font-medium opacity-90">模版集成度</Text>
               <View className="i-tabler-chart-bar text-lg opacity-80" />
             </View>
             <View className="my-2 flex items-baseline space-x-1">
-              <Text className="text-3xl font-bold">32.5</Text>
-              <Text className="text-xs opacity-80">小时</Text>
+              <Text className="text-3xl font-bold">100</Text>
+              <Text className="text-xs opacity-80">%</Text>
             </View>
-            <Avatar.Group>
-              {[1, 2, 3].map(i => (
-                <Avatar key={i} src={`https://avatars.githubusercontent.com/u/17453452?v=${i}`} size="small" />
-              ))}
-            </Avatar.Group>
-            <Text className="mt-2 block text-xs opacity-85">已超越 86% 的同期学员</Text>
+            <Text className="mt-2 block text-xs opacity-85">TypeScript 严格模式覆盖</Text>
           </View>
 
           <View className="flex-1 space-y-3">
@@ -233,7 +200,7 @@ export default function Index() {
               <View className="mb-2 flex items-center justify-between">
                 <View className="flex items-center space-x-1.5">
                   <View className="i-mdi-bell-ring text-base text-purple-500" />
-                  <Text className="text-sm text-gray-800 font-medium">每日学习提醒</Text>
+                  <Text className="text-sm text-gray-800 font-medium">功能开关演示</Text>
                 </View>
               </View>
               <View className="my-1.5 flex justify-center">
@@ -248,203 +215,59 @@ export default function Index() {
                 </View>
               </View>
               <Text className="block text-center text-xs text-gray-500">
-                {isToggled ? "已开启 20:00 晚间提醒" : "点击开启晚间提醒"}
+                {isToggled ? "当前状态：已开启" : "当前状态：已关闭"}
               </Text>
-            </View>
-
-            <View
-              className="rounded-2xl bg-white p-3.5 shadow-sm"
-              onClick={() => switchTab(RouteNames.ONLINE_COURSES)}
-            >
-              <View className="flex items-center space-x-2">
-                <View className="h-8 w-8 flex items-center justify-center rounded-xl bg-emerald-50">
-                  <View className="i-tabler-award text-lg text-emerald-600" />
-                </View>
-                <View>
-                  <Text className="block text-sm text-gray-800 font-medium">阶段测评</Text>
-                  <Text className="block text-xs text-gray-500">本周还有 1 次待完成</Text>
-                </View>
-              </View>
             </View>
           </View>
         </View>
 
-        {/* 5. 精选在线课程（点击带会员拦截体验） */}
+        {/* 5. 核心特性与模块演示 */}
         <View className="space-y-3">
           <View className="flex items-center justify-between">
             <View className="flex items-center space-x-2">
-              <Text className="text-lg text-gray-800 font-bold">精选在线课程</Text>
+              <Text className="text-lg text-gray-800 font-bold">核心功能特性</Text>
               <Tag color="primary" shape="rounded">
-                {FEATURED_COURSES.length}
+                {STARTER_FEATURES.length}
               </Tag>
-            </View>
-            <View
-              className="flex items-center text-sm text-primary-6 font-medium"
-              onClick={() => switchTab(RouteNames.ONLINE_COURSES)}
-            >
-              <Text>全部课程</Text>
-              <View className="i-tabler-chevron-right text-base" />
             </View>
           </View>
 
           <View className="space-y-3">
-            {FEATURED_COURSES.map(course => (
+            {STARTER_FEATURES.map(feature => (
               <View
-                key={course.id}
-                className="rounded-2xl bg-white p-4 shadow-sm space-y-3"
-                onClick={() => handleVipCourseClick(course.title)}
+                key={feature.id}
+                className="rounded-2xl bg-white p-4 shadow-sm space-y-2 active:bg-gray-50"
+                onClick={() => handleVipFeatureClick(feature.title)}
               >
                 <View className="flex items-start justify-between">
                   <View className="flex-1 pr-2 space-y-1">
                     <Text className="block text-base text-gray-800 font-semibold leading-snug">
-                      {course.title}
+                      {feature.title}
                     </Text>
-                    <Text className="block text-xs text-gray-500">{course.instructor}</Text>
+                    <Text className="block text-xs text-gray-500">{feature.desc}</Text>
                   </View>
-                  <Tag color={course.tagColor} shape="rounded">
-                    {course.tag}
+                  <Tag color={feature.tagColor} shape="rounded">
+                    {feature.tag}
                   </Tag>
                 </View>
-
-                <View className="space-y-1.5">
-                  <View className="flex items-center justify-between text-xs text-gray-500">
-                    <Text>
-                      共
-                      {course.lessons}
-                      {" "}
-                      节 ·
-                      {" "}
-                      {course.students}
-                      {" "}
-                      人在学
-                    </Text>
-                    <Text className="text-primary-6 font-medium">
-                      学习进度
-                      {" "}
-                      {course.progress}
-                      %
-                    </Text>
-                  </View>
-                  <View className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
-                    <View
-                      className="h-full rounded-full bg-primary-6"
-                      style={{ width: `${course.progress}%` }}
-                    />
-                  </View>
-                </View>
               </View>
             ))}
           </View>
         </View>
 
-        {/* 6. 本周培训打卡计划 */}
-        <View className="space-y-3">
-          <View className="flex items-center justify-between">
-            <Text className="text-lg text-gray-800 font-bold">本周培训日程</Text>
-            <View
-              className="flex items-center text-sm text-primary-6 font-medium"
-              onClick={() => switchTab(RouteNames.TRAINING_PLAN)}
-            >
-              <Text>查看计划</Text>
-              <View className="i-tabler-chevron-right text-base" />
-            </View>
-          </View>
-
-          <View className="rounded-2xl bg-white p-4 shadow-sm space-y-3">
-            {WEEKLY_TASKS.map(task => (
-              <View
-                key={task.id}
-                className="flex items-center justify-between border-b border-gray-50 pb-3 last:border-none last:pb-0"
-              >
-                <View className="flex items-center space-x-3">
-                  <View
-                    className={`h-8 w-10 flex items-center justify-center rounded-lg text-xs font-bold ${
-                      task.done ? "bg-emerald-50 text-emerald-600" : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {task.day}
-                  </View>
-                  <View className="space-y-0.5">
-                    <Text
-                      className={`block text-sm font-medium ${
-                        task.done ? "text-gray-400 line-through" : "text-gray-800"
-                      }`}
-                    >
-                      {task.title}
-                    </Text>
-                    <Text className="block text-xs text-gray-400">
-                      预计耗时：
-                      {task.time}
-                    </Text>
-                  </View>
-                </View>
-                <View
-                  className={
-                    task.done
-                      ? "i-tabler-circle-check-filled text-xl text-emerald-500"
-                      : "i-tabler-circle text-xl text-gray-300"
-                  }
-                />
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* 7. 堆叠式卡片展示区 */}
-        <View className="space-y-3">
-          <View className="flex items-center justify-between">
-            <Text className="text-lg text-gray-800 font-bold">最新动态</Text>
-            <Text className="text-xs text-gray-400">实时更新</Text>
-          </View>
-          <View className="relative m-0" style={{ height: Taro.pxTransform(230) }}>
-            {[1, 2, 3].map((item, index) => (
-              <View
-                key={item}
-                className="absolute w-full"
-                style={{
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  transform: `translateY(${Taro.pxTransform(index * 70)}) scale(${1 - index * 0.04})`,
-                  zIndex: 4 - index,
-                }}
-              >
-                <View className="flex items-center rounded-xl bg-white p-4 shadow-md">
-                  <Image
-                    className="mr-3 h-9 w-9 rounded-full"
-                    src={`https://avatars.githubusercontent.com/u/17453452?v=${item}`}
-                  />
-                  <View className="flex-1">
-                    <View className="text-sm text-gray-800 font-semibold">
-                      实战训练营第
-                      {" "}
-                      {item}
-                      {" "}
-                      期已开启报名
-                    </View>
-                    <View className="truncate text-xs text-gray-500">
-                      完成全部课时与实操考核即可获取结业认证证书
-                    </View>
-                  </View>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* 8. 技术专栏文章列表（加长页面以充分测试顶部毛玻璃导航栏与底部贴底安全区滚动效果） */}
+        {/* 6. 技术专栏文章列表 */}
         <View className="space-y-3">
           <View className="flex items-center justify-between">
             <Text className="text-lg text-gray-800 font-bold">技术实战专栏</Text>
-            <Text className="text-xs text-gray-400">每周精选深度好文</Text>
+            <Text className="text-xs text-gray-400">跨端架构深度好文</Text>
           </View>
 
           <View className="space-y-3">
             {ARTICLES.map(article => (
               <View
                 key={article.id}
-                className="rounded-2xl bg-white p-4 shadow-sm space-y-2"
-                onClick={() => handleVipCourseClick(article.title)}
+                className="rounded-2xl bg-white p-4 shadow-sm space-y-2 active:bg-gray-50"
+                onClick={() => Toast.open(`正在阅读：${article.title}`)}
               >
                 <Text className="block text-base text-gray-800 font-semibold leading-snug">
                   {article.title}
@@ -463,7 +286,7 @@ export default function Index() {
 
         {/* 底部到底提示 */}
         <View className="py-4 text-center text-xs text-gray-400">
-          —— 已经到底啦，快去开启今日学习吧 ——
+          —— Taro Starter 助力高效跨端开发 ——
         </View>
       </View>
       <Toast id="toast" />

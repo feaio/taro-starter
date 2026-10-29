@@ -1,59 +1,35 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { BottomBarItem } from "~/components/BottomBar";
+import type { LayoutProps } from "~/components/Layout";
 
-/**
- * 菜单按钮信息接口
- * Menu button information interface
- */
-export interface MenuButtonInfo {
-  /**
-   * 按钮顶部距离屏幕顶部的距离（单位像素）
-   */
-  top: number;
-
-  /**
-   * 按钮高度（单位像素）
-   */
-  height: number;
-
-  /**
-   * 状态栏高度（单位像素）
-   */
-  statusBarHeight: number;
-
-  /**
-   * 按钮宽度（单位像素）
-   */
-  width: number;
-
-  /**
-   * 按钮右边距（单位像素）
-   */
-  marginRight: number;
+export interface NavigationMenuProps {
+  homeUrl: string;
+  menuButton: {
+    top: number;
+    bottom: number;
+    height: number;
+    left: number;
+    right: number;
+    width: number;
+    marginRight: number;
+  };
 }
 
-/**
- * Navigation 组件的 props 接口
- */
-export interface NavigationProps {
-  /**
-   * 导航栏标题
-   */
+export interface NavigationBarProps {
   navTitle?: ReactNode;
-
-  /**
-   * 导航栏自定义类名
-   */
-  navClassName?: string;
-
-  /**
-   * 是否显示导航菜单
-   */
-  shouldShowNavigationMenu: boolean;
-
-  /**
-   * 自定义渲染导航栏头部的函数
-   */
+  navHeight: number;
+  statusBarHeight: number;
+  menuButtonHeight: number;
+  menuButtonTop: number;
+  shouldShowNavigationMenu?: boolean;
+  navRight?: ReactNode;
+  homeUrl?: string;
+  className?: string;
+  style?: CSSProperties;
+  shouldShowNavBar?: boolean;
+  shouldShowTitle?: boolean;
+  navTitleColor?: string;
+  navBgColor?: string;
   renderCustomHeader?: (
     navHeight: number,
     statusBarHeight: number,
@@ -61,92 +37,85 @@ export interface NavigationProps {
   ) => ReactNode;
 }
 
-/**
- * NavBar 组件的 props 接口
- */
-export interface NavBarProps extends NavigationProps {
-  /**
-   * 导航栏标题
-   */
-  title: ReactNode;
-
-  /**
-   * 菜单按钮信息
-   */
-  menuButton: MenuButtonInfo;
-}
-
-/**
- * NavigationMenu 组件的 props 接口
- */
-export interface NavigationMenuProps {
-  /**
-   * 首页 URL
-   */
-  homeUrl: string;
-
-  /**
-   * 菜单按钮信息
-   */
-  menuButton: MenuButtonInfo;
-}
-
-/**
- * PageWrapper（全局 Layout）组件的 props 接口
- */
 export interface PageWrapperProps {
   /**
-   * 容器类名
-   */
-  className?: string;
-
-  /**
-   * 子组件
+   * 页面主内容
    */
   children: ReactNode;
 
   /**
-   * 是否显示顶部导航栏
-   */
-  shouldShowNavigation?: boolean;
-
-  /**
-   * 是否显示顶部导航返回/首页菜单
-   */
-  shouldShowNavigationMenu?: boolean;
-
-  /**
-   * 是否显示底部导航栏（兼容旧属性名）
-   */
-  shouldShowBottomActions?: boolean;
-
-  /**
-   * 是否显示底部导航栏（BottomBar）
-   */
-  shouldShowBottomBar?: boolean;
-
-  /**
-   * 自定义底部导航项（支持 3 个或 4 个）
-   */
-  bottomBarItems?: BottomBarItem[];
-
-  /**
-   * 导航栏标题
+   * 页面标题（直接传入字符串或 ReactNode）
    */
   navTitle?: ReactNode;
 
   /**
-   * 导航栏自定义类名
+   * 右侧自定义内容
    */
-  navClassName?: string;
+  navRight?: ReactNode;
 
   /**
-   * 是否启用下拉刷新
+   * 是否显示左侧返回/首页菜单（默认 true）
+   */
+  shouldShowNavigationMenu?: boolean;
+
+  /**
+   * 是否显示底部操作栏（默认 false）
+   * @deprecated 建议使用 shouldShowBottomBar
+   */
+  shouldShowBottomActions?: boolean;
+
+  /**
+   * 是否显示底部导航栏 BottomBar（替代原 shouldShowBottomActions）
+   */
+  shouldShowBottomBar?: boolean;
+
+  /**
+   * 底部导航项配置（可选，不传则默认展示 4 项）
+   */
+  bottomBarItems?: BottomBarItem[];
+
+  /**
+   * 页面容器类名
+   */
+  className?: string;
+
+  /**
+   * 内容区域容器类名
+   */
+  contentClassName?: string;
+
+  /**
+   * 根容器内联样式
+   */
+  style?: CSSProperties;
+
+  /**
+   * 是否显示顶部导航栏（默认 true）
+   */
+  shouldShowNavBar?: boolean;
+
+  /**
+   * 是否显示标题文字（默认 true）
+   */
+  shouldShowTitle?: boolean;
+
+  /**
+   * 标题文字颜色
+   */
+  navTitleColor?: string;
+
+  /**
+   * 导航栏背景颜色
+   */
+  navBgColor?: string;
+
+  /**
+   * 是否启用下拉刷新（默认 false）
    */
   enablePullToRefresh?: boolean;
 
   /**
-   * 刷新回调函数
+   * 下拉刷新触发的回调
    */
   onRefresh?: () => Promise<void>;
 
@@ -173,4 +142,9 @@ export interface PageWrapperProps {
    * 是否显示加载状态
    */
   loading?: boolean;
+
+  /**
+   * 是否需要检查隐私政策同意状态并全局弹窗（默认为 true，协议详情等特殊页面设为 false）
+   */
+  shouldCheckPrivacy?: boolean;
 }

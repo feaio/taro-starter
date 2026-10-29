@@ -1,7 +1,9 @@
 // 页面路由名称枚举
 export enum RouteNames {
   HOME = "HOME",
-DISCOVERDISCOVERMESSAGESMESSAGES  PROFILE = "PROFILE",
+  DISCOVER = "DISCOVER",
+  MESSAGES = "MESSAGES",
+  PROFILE = "PROFILE",
   LOGIN = "LOGIN",
   PRIVACY_POLICY = "PRIVACY_POLICY",
   USER_AGREEMENT = "USER_AGREEMENT",
@@ -10,7 +12,9 @@ DISCOVERDISCOVERMESSAGESMESSAGES  PROFILE = "PROFILE",
 // 页面路径常量
 export const PAGES = {
   [RouteNames.HOME]: "/pages/index/index",
-DISCOVERdiscoverMESSAGESmessages  [RouteNames.PROFILE]: "/pages/profile/index",
+  [RouteNames.DISCOVER]: "/pages/discover/index",
+  [RouteNames.MESSAGES]: "/pages/messages/index",
+  [RouteNames.PROFILE]: "/pages/profile/index",
   [RouteNames.LOGIN]: "/pages/login/index",
   [RouteNames.PRIVACY_POLICY]: "/pages/agreements/privacy-policy",
   [RouteNames.USER_AGREEMENT]: "/pages/agreements/user-agreement",
@@ -19,7 +23,9 @@ DISCOVERdiscoverMESSAGESmessages  [RouteNames.PROFILE]: "/pages/profile/index",
 // 底部导航 Tab 页面集合
 export const TAB_BAR_ROUTES: RouteNames[] = [
   RouteNames.HOME,
-DISCOVERMESSAGES  RouteNames.PROFILE,
+  RouteNames.DISCOVER,
+  RouteNames.MESSAGES,
+  RouteNames.PROFILE,
 ];
 
 /**

@@ -3,7 +3,9 @@ import { ADAPTED_PAGES, RouteNames } from "~/constants/routes";
 export default defineAppConfig({
   pages: [
     ADAPTED_PAGES[RouteNames.HOME],
-DISCOVERMESSAGES    ADAPTED_PAGES[RouteNames.PROFILE],
+    ADAPTED_PAGES[RouteNames.DISCOVER],
+    ADAPTED_PAGES[RouteNames.MESSAGES],
+    ADAPTED_PAGES[RouteNames.PROFILE],
     ADAPTED_PAGES[RouteNames.LOGIN],
     ADAPTED_PAGES[RouteNames.PRIVACY_POLICY],
     ADAPTED_PAGES[RouteNames.USER_AGREEMENT],
@@ -26,7 +28,15 @@ DISCOVERMESSAGES    ADAPTED_PAGES[RouteNames.PROFILE],
       {
         pagePath: ADAPTED_PAGES[RouteNames.HOME],
         text: "首页",
-DISCOVER发现MESSAGES消息      },
+      },
+      {
+        pagePath: ADAPTED_PAGES[RouteNames.DISCOVER],
+        text: "发现",
+      },
+      {
+        pagePath: ADAPTED_PAGES[RouteNames.MESSAGES],
+        text: "消息",
+      },
       {
         pagePath: ADAPTED_PAGES[RouteNames.PROFILE],
         text: "我的",

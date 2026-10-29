@@ -31,7 +31,8 @@ export function isAbsoluteOrSpecialUrl(url: string): boolean {
  */
 export function getS3BaseUrl(): string {
   const currentEnv: Environment = getCurrentEnvironment();
-  return domainConfig[currentEnv]?.s3_base_url || process.env.TARO_S3_BASE_URL || "";
+  const envS3Url = typeof process !== "undefined" && process?.env?.TARO_S3_BASE_URL ? process.env.TARO_S3_BASE_URL : "";
+  return domainConfig[currentEnv]?.s3_base_url || envS3Url || "";
 }
 
 /**

@@ -93,6 +93,8 @@ export default defineConfig<"vite">(async (merge, { mode }) => {
     outputRoot: `dist/${process.env.TARO_ENV}`,
     plugins: ["@tarojs/plugin-html"],
     defineConstants: {
+      "process.env.TARO_API_BASE_URL": JSON.stringify(process.env.TARO_API_BASE_URL || ""),
+      "process.env.TARO_S3_BASE_URL": JSON.stringify(process.env.TARO_S3_BASE_URL || ""),
     },
     copy: {
       patterns: [
